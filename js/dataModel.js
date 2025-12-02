@@ -140,7 +140,15 @@ class DataModel {
       }
       return ['red'];
     } else {
-      // All reds gone, pot colors in order
+      // All reds gone - check if we just potted the last red
+      if (frame.currentBreak && frame.currentBreak.shots.length > 0) {
+        const lastShot = frame.currentBreak.shots[frame.currentBreak.shots.length - 1];
+        if (lastShot.ball === 'red' && lastShot.potted) {
+          // Just potted the last red, can pot any color
+          return frame.colorsRemaining;
+        }
+      }
+      // Otherwise, pot colors in order
       return frame.colorsRemaining.length > 0 ? [frame.colorsRemaining[0]] : [];
     }
   }
