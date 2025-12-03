@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Undo Shot Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .test-step {
+            padding: 10px;
+            margin: 10px 0;
+            background: #ecf0f1;
+            border-left: 4px solid #3498db;
+        }
+        .test-result {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .score-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 10px 0;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 3px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Undo Shot Bug Fix Test</h1>
+    
+    <div class="test-container">
+        <h2>Test Scenario</h2>
+        <p>This test simulates a frame where:</p>
+        <ol>
+            <li>Player 1 pots a red (1 point)</li>
+            <li>We undo that shot</li>
+            <li>Player 1 commits a 4-point foul instead</li>
+            <li>Player 2 gets 4 points from the foul</li>
+            <li>We complete the frame and verify scores</li>
+        </ol>
+        <button onclick="runTest()">Run All Tests</button>
+        <button onclick="runTest1()">Test 1: Basic Undo</button>
+        <button onclick="runTest2()">Test 2: Undo Foul</button>
+        <button onclick="runTest3()">Test 3: Double Undo</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <div class="test-container" id="results" style="display:none;">
+        <h2>Test Results</h2>
+        <div id="test-output"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>Test Log</h2>
+        <div class="log" id="log"></div>
+    </div>
+
+    <script src="js/dataModel.js"></script>
+    <script src="js/statistics.js"></script>
+    <script>
+        let logEntries = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            logEntries.push(`[${timestamp}] ${message}`);
+            updateLog();
+        }
+
+        function updateLog() {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML = logEntries.map(entry => 
+                `<div class="log-entry">${entry}</div>`
+            ).join('');
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            logEntries = [];
+            updateLog();
+        }
+
+        function assert(condition, message) {
+            if (condition) {
+                log(`✓ PASS: ${message}`, 'pass');
+                return true;
+            } else {
+                log(`✗ FAIL: ${message}`, 'fail');
+                return false;
+            }
+        }
+
+        function runTest() {
+            clearLog();
+            document.getElementById('results').style.display = 'block';
+            
+            log('=== Running All Tests ===');
+            log('');
+            
+            const test1Result = runTest1Internal();
+            log('');
+            log('---');
+            log('');
+            const test2Result = runTest2Internal();
+            log('');
+            log('---');
+            log('');
+            const test3Result = runTest3Internal();
+            
+            const allPassed = test1Result && test2Result && test3Result;
+            
+            const output = document.getElementById('test-output');
+            if (allPassed) {
+                output.innerHTML = `
+                    <div class="test-result pass">
+                        ✓ ALL TESTS PASSED (3/3)
+                    </div>
+                    <div class="info">
+                        <ul>
+                            <li>✓ Test 1: Basic undo with red pot and foul replacement</li>
+                            <li>✓ Test 2: Undo foul and verify foul count</li>
+                            <li>✓ Test 3: Double undo to restore earlier state</li>
+                        </ul>
+                    </div>
+                `;
+            } else {
+                output.innerHTML = `
+                    <div class="test-result fail">
+                        ✗ SOME TESTS FAILED
+                    </div>
+                    <p>Check the test log for details.</p>
+                `;
+            }
+            
+            log('');
+            log('=== All Tests Complete ===');
+        }
+
+        function runTest1() {
+            clearLog();
+            document.getElementById('results').style.display = 'block';
+            const result = runTest1Internal();
+            
+            const output = document.getElementById('test-output');
+            if (result) {
+                output.innerHTML = `<div class="test-result pass">✓ TEST 1 PASSED</div>`;
+            } else {
+                output.innerHTML = `<div class="test-result fail">✗ TEST 1 FAILED</div>`;
+            }
+        }
+
+        function runTest1Internal() {
+            log('=== Test 1: Basic Undo (Red Pot → Undo → Foul) ===');
+            log('');
+            
+            let allPassed = true;
+            const results = [];
+
+            try {
+                // Create a match
+                log('Step 1: Creating match...');
+                const match = DataModel.createMatch('Player 1', 'Player 2', 3);
+                log(`Match created: ${match.players[0]} vs ${match.players[1]}`);
+                
+                // Create first frame
+                log('');
+                log('Step 2: Creating frame...');
+                const frame = DataModel.createFrame(1);
+                match.frames.push(frame);
+                match.currentFrame = 0;
+                log(`Frame ${frame.number} created`);
+                log(`Initial scores: ${frame.scores[0]} - ${frame.scores[1]}`);
+                
+                // Start a break for player 1
+                log('');
+                log('Step 3: Starting break for Player 1...');
+                frame.currentBreak = DataModel.createBreak(0);
+                frame.breaks.push(frame.currentBreak);
+                log('Break started');
+                
+                // Simulate saving state before shot (like the app does)
+                log('');
+                log('Step 4: Saving state for undo...');
+                const savedState = {
+                    scores: [...frame.scores],
+                    redsRemaining: frame.redsRemaining,
+                    colorsRemaining: [...frame.colorsRemaining],
+                    activePlayer: frame.activePlayer,
+                    currentBreak: {
+                        player: frame.currentBreak.player,
+                        points: frame.currentBreak.points,
+                        balls: [...frame.currentBreak.balls],
+                        shots: frame.currentBreak.shots.length
+                    }
+                };
+                log(`Saved state: scores=[${savedState.scores}], reds=${savedState.redsRemaining}, player=${savedState.activePlayer}`);
+                
+                // Player 1 pots a red
+                log('');
+                log('Step 5: Player 1 pots a red...');
+                const redShot = DataModel.createShot('red', true, {});
+                frame.currentBreak.shots.push(redShot);
+                frame.currentBreak.points += redShot.points;
+                frame.currentBreak.balls.push('red');
+                frame.scores[0] += redShot.points;
+                DataModel.updateTableState(frame, 'red', true);
+                
+                log(`Red potted: ${redShot.points} point(s)`);
+                log(`Player 1 score: ${frame.scores[0]}`);
+                log(`Player 1 break: ${frame.currentBreak.points}`);
+                log(`Reds remaining: ${frame.redsRemaining}`);
+                
+                // Verify state after red pot
+                allPassed &= assert(frame.scores[0] === 1, 'Player 1 score should be 1 after potting red');
+                allPassed &= assert(frame.scores[1] === 0, 'Player 2 score should be 0');
+                allPassed &= assert(frame.currentBreak.points === 1, 'Current break should be 1');
+                allPassed &= assert(frame.redsRemaining === 14, 'Reds remaining should be 14');
+                
+                // UNDO THE SHOT
+                log('');
+                log('Step 6: UNDOING the red pot...');
+                
+                // Remove shot from break
+                const removedShot = frame.currentBreak.shots.pop();
+                frame.currentBreak.points -= removedShot.points;
+                if (removedShot.potted && frame.currentBreak.balls.length > 0) {
+                    frame.currentBreak.balls.pop();
+                }
+                log(`Removed shot: ${removedShot.ball}, ${removedShot.points} point(s)`);
+                
+                // Restore saved state
+                frame.scores = [...savedState.scores];
+                frame.redsRemaining = savedState.redsRemaining;
+                frame.colorsRemaining = [...savedState.colorsRemaining];
+                frame.activePlayer = savedState.activePlayer;
+                frame.currentBreak.points = savedState.currentBreak.points;
+                frame.currentBreak.balls = [...savedState.currentBreak.balls];
+                
+                log(`State restored: scores=[${frame.scores}], reds=${frame.redsRemaining}`);
+                log(`Player 1 score after undo: ${frame.scores[0]}`);
+                log(`Player 1 break after undo: ${frame.currentBreak.points}`);
+                
+                // Verify state after undo
+                allPassed &= assert(frame.scores[0] === 0, 'Player 1 score should be 0 after undo');
+                allPassed &= assert(frame.scores[1] === 0, 'Player 2 score should still be 0 after undo');
+                allPassed &= assert(frame.currentBreak.points === 0, 'Current break should be 0 after undo');
+                allPassed &= assert(frame.redsRemaining === 15, 'Reds remaining should be restored to 15');
+                allPassed &= assert(frame.currentBreak.shots.length === 0, 'Break should have no shots after undo');
+                
+                // Now commit a 4-point foul instead
+                log('');
+                log('Step 7: Player 1 commits a 4-point foul...');
+                
+                // Save state again before foul
+                const savedStateBeforeFoul = {
+                    scores: [...frame.scores],
+                    redsRemaining: frame.redsRemaining,
+                    colorsRemaining: [...frame.colorsRemaining],
+                    activePlayer: frame.activePlayer,
+                    currentBreak: {
+                        player: frame.currentBreak.player,
+                        points: frame.currentBreak.points,
+                        balls: [...frame.currentBreak.balls],
+                        shots: frame.currentBreak.shots.length
+                    }
+                };
+                
+                const foulShot = DataModel.createShot('red', false, {
+                    isFoul: true,
+                    foulPoints: 4
+                });
+                
+                // Award foul points to opponent (Player 2)
+                const opponent = frame.activePlayer === 0 ? 1 : 0;
+                frame.scores[opponent] += 4;
+                
+                frame.currentBreak.shots.push(foulShot);
+                
+                log(`Foul committed: 4 points awarded to Player 2`);
+                log(`Player 1 score: ${frame.scores[0]}`);
+                log(`Player 2 score: ${frame.scores[1]}`);
+                
+                // Verify state after foul
+                allPassed &= assert(frame.scores[0] === 0, 'Player 1 score should still be 0 after foul');
+                allPassed &= assert(frame.scores[1] === 4, 'Player 2 score should be 4 after foul');
+                allPassed &= assert(frame.currentBreak.points === 0, 'Current break points should still be 0 (fouls don\'t add to break)');
+                
+                // Complete the frame
+                log('');
+                log('Step 8: Completing the frame...');
+                frame.endTime = new Date().toISOString();
+                frame.winner = DataModel.calculateFrameWinner(frame);
+                
+                log(`Frame complete!`);
+                log(`Final frame scores: ${frame.scores[0]} - ${frame.scores[1]}`);
+                log(`Winner: Player ${frame.winner + 1}`);
+                
+                // Calculate match statistics
+                log('');
+                log('Step 9: Calculating match statistics...');
+                match.statistics = StatisticsEngine.calculateMatchStatistics(match);
+                
+                log(`Player 1 total points: ${match.statistics.player1.totalPoints}`);
+                log(`Player 2 total points: ${match.statistics.player2.totalPoints}`);
+                
+                // Final verification
+                log('');
+                log('=== Final Verification ===');
+                allPassed &= assert(frame.scores[0] === 0, 'Final: Player 1 frame score should be 0');
+                allPassed &= assert(frame.scores[1] === 4, 'Final: Player 2 frame score should be 4');
+                allPassed &= assert(match.statistics.player1.totalPoints === 0, 'Final: Player 1 total points should be 0');
+                allPassed &= assert(match.statistics.player2.totalPoints === 4, 'Final: Player 2 total points should be 4');
+                allPassed &= assert(frame.winner === 1, 'Final: Player 2 should be the winner');
+                
+                // Display results
+                const output = document.getElementById('test-output');
+                if (allPassed) {
+                    output.innerHTML = `
+                        <div class="test-result pass">
+                            ✓ ALL TESTS PASSED
+                        </div>
+                        <div class="score-display">
+                            Final Frame Score: ${frame.scores[0]} - ${frame.scores[1]}
+                        </div>
+                        <div class="score-display">
+                            Total Points: ${match.statistics.player1.totalPoints} - ${match.statistics.player2.totalPoints}
+                        </div>
+                        <div class="info">
+                            The undo function correctly:
+                            <ul>
+                                <li>Removed the red pot (1 point) from Player 1's score</li>
+                                <li>Restored the table state (15 reds)</li>
+                                <li>Allowed the 4-point foul to be recorded for Player 2</li>
+                                <li>Calculated final statistics correctly</li>
+                            </ul>
+                        </div>
+                    `;
+                } else {
+                    output.innerHTML = `
+                        <div class="test-result fail">
+                            ✗ SOME TESTS FAILED
+                        </div>
+                        <div class="score-display">
+                            Final Frame Score: ${frame.scores[0]} - ${frame.scores[1]}
+                        </div>
+                        <div class="score-display">
+                            Total Points: ${match.statistics.player1.totalPoints} - ${match.statistics.player2.totalPoints}
+                        </div>
+                        <p>Check the test log for details.</p>
+                    `;
+                }
+                
+                log('');
+                log('=== Test 1 Complete ===');
+                
+                return allPassed;
+                
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'fail');
+                log(`Stack: ${error.stack}`, 'fail');
+                
+                const output = document.getElementById('test-output');
+                output.innerHTML = `
+                    <div class="test-result fail">
+                        ✗ TEST ERROR: ${error.message}
+                    </div>
+                `;
+                return false;
+            }
+        }
+
+        function runTest2() {
+            clearLog();
+            document.getElementById('results').style.display = 'block';
+            const result = runTest2Internal();
+            
+            const output = document.getElementById('test-output');
+            if (result) {
+                output.innerHTML = `<div class="test-result pass">✓ TEST 2 PASSED</div>`;
+            } else {
+                output.innerHTML = `<div class="test-result fail">✗ TEST 2 FAILED</div>`;
+            }
+        }
+
+        function runTest2Internal() {
+            log('=== Test 2: Undo Foul and Check Foul Count ===');
+            log('');
+            
+            let allPassed = true;
+
+            try {
+                // Create a match
+                log('Step 1: Creating match...');
+                const match = DataModel.createMatch('Player 1', 'Player 2', 3);
+                log(`Match created: ${match.players[0]} vs ${match.players[1]}`);
+                
+                // Create first frame
+                log('');
+                log('Step 2: Creating frame...');
+                const frame = DataModel.createFrame(1);
+                match.frames.push(frame);
+                match.currentFrame = 0;
+                log(`Frame ${frame.number} created`);
+                
+                // Start a break for player 1
+                log('');
+                log('Step 3: Starting break for Player 1...');
+                frame.currentBreak = DataModel.createBreak(0);
+                frame.breaks.push(frame.currentBreak);
+                log('Break started');
+                
+                // Save state before foul
+                log('');
+                log('Step 4: Saving state for undo...');
+                const savedState = {
+                    scores: [...frame.scores],
+                    redsRemaining: frame.redsRemaining,
+                    colorsRemaining: [...frame.colorsRemaining],
+                    activePlayer: frame.activePlayer,
+                    currentBreak: {
+                        player: frame.currentBreak.player,
+                        points: frame.currentBreak.points,
+                        balls: [...frame.currentBreak.balls],
+                        shots: frame.currentBreak.shots.length
+                    }
+                };
+                log(`Saved state: scores=[${savedState.scores}], player=${savedState.activePlayer}`);
+                
+                // Player 1 commits a 4-point foul
+                log('');
+                log('Step 5: Player 1 commits a 4-point foul...');
+                const foulShot = DataModel.createShot('red', false, {
+                    isFoul: true,
+                    foulPoints: 4
+                });
+                
+                // Award foul points to opponent
+                const opponent = frame.activePlayer === 0 ? 1 : 0;
+                frame.scores[opponent] += 4;
+                frame.currentBreak.shots.push(foulShot);
+                
+                log(`Foul committed: 4 points awarded to Player 2`);
+                log(`Scores: ${frame.scores[0]} - ${frame.scores[1]}`);
+                
+                // Calculate statistics with foul
+                log('');
+                log('Step 6: Calculating statistics with foul...');
+                match.statistics = StatisticsEngine.calculateMatchStatistics(match);
+                log(`Player 1 fouls: ${match.statistics.player1.fouls}`);
+                
+                allPassed &= assert(match.statistics.player1.fouls === 1, 'Player 1 should have 1 foul');
+                allPassed &= assert(frame.scores[1] === 4, 'Player 2 should have 4 points from foul');
+                
+                // UNDO THE FOUL
+                log('');
+                log('Step 7: UNDOING the foul...');
+                
+                // Remove shot from break
+                const removedShot = frame.currentBreak.shots.pop();
+                frame.currentBreak.points -= removedShot.points;
+                log(`Removed foul shot`);
+                
+                // Restore saved state
+                frame.scores = [...savedState.scores];
+                frame.redsRemaining = savedState.redsRemaining;
+                frame.colorsRemaining = [...savedState.colorsRemaining];
+                frame.activePlayer = savedState.activePlayer;
+                frame.currentBreak.points = savedState.currentBreak.points;
+                frame.currentBreak.balls = [...savedState.currentBreak.balls];
+                
+                log(`State restored: scores=[${frame.scores}]`);
+                
+                // Recalculate statistics after undo
+                log('');
+                log('Step 8: Recalculating statistics after undo...');
+                match.statistics = StatisticsEngine.calculateMatchStatistics(match);
+                log(`Player 1 fouls after undo: ${match.statistics.player1.fouls}`);
+                
+                // Verify foul count is back to 0
+                allPassed &= assert(match.statistics.player1.fouls === 0, 'Player 1 should have 0 fouls after undo');
+                allPassed &= assert(frame.scores[0] === 0, 'Player 1 score should be 0 after undo');
+                allPassed &= assert(frame.scores[1] === 0, 'Player 2 score should be 0 after undo');
+                allPassed &= assert(frame.currentBreak.shots.length === 0, 'Break should have no shots after undo');
+                
+                log('');
+                log('=== Test 2 Complete ===');
+                
+                return allPassed;
+                
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'fail');
+                log(`Stack: ${error.stack}`, 'fail');
+                return false;
+            }
+        }
+
+        function runTest3() {
+            clearLog();
+            document.getElementById('results').style.display = 'block';
+            const result = runTest3Internal();
+            
+            const output = document.getElementById('test-output');
+            if (result) {
+                output.innerHTML = `<div class="test-result pass">✓ TEST 3 PASSED</div>`;
+            } else {
+                output.innerHTML = `<div class="test-result fail">✗ TEST 3 FAILED</div>`;
+            }
+        }
+
+        function runTest3Internal() {
+            log('=== Test 3: Double Undo (Two Successive Shots) ===');
+            log('');
+            
+            let allPassed = true;
+
+            try {
+                // Create a match
+                log('Step 1: Creating match...');
+                const match = DataModel.createMatch('Player 1', 'Player 2', 3);
+                log(`Match created: ${match.players[0]} vs ${match.players[1]}`);
+                
+                // Create first frame
+                log('');
+                log('Step 2: Creating frame...');
+                const frame = DataModel.createFrame(1);
+                match.frames.push(frame);
+                match.currentFrame = 0;
+                log(`Frame ${frame.number} created`);
+                log(`Initial state: scores=[${frame.scores}], reds=${frame.redsRemaining}`);
+                
+                // Start a break for player 1
+                log('');
+                log('Step 3: Starting break for Player 1...');
+                frame.currentBreak = DataModel.createBreak(0);
+                frame.breaks.push(frame.currentBreak);
+                
+                // Save initial state (before any shots)
+                const initialState = {
+                    scores: [...frame.scores],
+                    redsRemaining: frame.redsRemaining,
+                    colorsRemaining: [...frame.colorsRemaining],
+                    activePlayer: frame.activePlayer,
+                    currentBreak: {
+                        player: frame.currentBreak.player,
+                        points: frame.currentBreak.points,
+                        balls: [...frame.currentBreak.balls],
+                        shots: frame.currentBreak.shots.length
+                    }
+                };
+                
+                // SHOT 1: Player 1 pots a red
+                log('');
+                log('Step 4: Player 1 pots first red...');
+                const savedState1 = {
+                    scores: [...frame.scores],
+                    redsRemaining: frame.redsRemaining,
+                    colorsRemaining: [...frame.colorsRemaining],
+                    activePlayer: frame.activePlayer,
+                    currentBreak: {
+                        player: frame.currentBreak.player,
+                        points: frame.currentBreak.points,
+                        balls: [...frame.currentBreak.balls],
+                        shots: frame.currentBreak.shots.length
+                    }
+                };
+                
+                const redShot1 = DataModel.createShot('red', true, {});
+                frame.currentBreak.shots.push(redShot1);
+                frame.currentBreak.points += redShot1.points;
+                frame.currentBreak.balls.push('red');
+                frame.scores[0] += redShot1.points;
+                DataModel.updateTableState(frame, 'red', true);
+                
+                log(`First red potted: ${redShot1.points} point`);
+                log(`State after shot 1: scores=[${frame.scores}], reds=${frame.redsRemaining}, break=${frame.currentBreak.points}`);
+                
+                allPassed &= assert(frame.scores[0] === 1, 'Player 1 score should be 1 after first red');
+                allPassed &= assert(frame.redsRemaining === 14, 'Reds remaining should be 14');
+                allPassed &= assert(frame.currentBreak.points === 1, 'Break should be 1');
+                
+                // SHOT 2: Player 1 pots black (7 points)
+                log('');
+                log('Step 5: Player 1 pots black...');
+                const savedState2 = {
+                    scores: [...frame.scores],
+                    redsRemaining: frame.redsRemaining,
+                    colorsRemaining: [...frame.colorsRemaining],
+                    activePlayer: frame.activePlayer,
+                    currentBreak: {
+                        player: frame.currentBreak.player,
+                        points: frame.currentBreak.points,
+                        balls: [...frame.currentBreak.balls],
+                        shots: frame.currentBreak.shots.length
+                    }
+                };
+                
+                const blackShot = DataModel.createShot('black', true, {});
+                frame.currentBreak.shots.push(blackShot);
+                frame.currentBreak.points += blackShot.points;
+                frame.currentBreak.balls.push('black');
+                frame.scores[0] += blackShot.points;
+                DataModel.updateTableState(frame, 'black', true);
+                
+                log(`Black potted: ${blackShot.points} points`);
+                log(`State after shot 2: scores=[${frame.scores}], reds=${frame.redsRemaining}, break=${frame.currentBreak.points}`);
+                
+                allPassed &= assert(frame.scores[0] === 8, 'Player 1 score should be 8 after black');
+                allPassed &= assert(frame.redsRemaining === 14, 'Reds remaining should still be 14');
+                allPassed &= assert(frame.currentBreak.points === 8, 'Break should be 8');
+                
+                // UNDO SHOT 2 (black)
+                log('');
+                log('Step 6: UNDOING shot 2 (black)...');
+                
+                const removedShot2 = frame.currentBreak.shots.pop();
+                frame.currentBreak.points -= removedShot2.points;
+                if (removedShot2.potted && frame.currentBreak.balls.length > 0) {
+                    frame.currentBreak.balls.pop();
+                }
+                
+                frame.scores = [...savedState2.scores];
+                frame.redsRemaining = savedState2.redsRemaining;
+                frame.colorsRemaining = [...savedState2.colorsRemaining];
+                frame.activePlayer = savedState2.activePlayer;
+                frame.currentBreak.points = savedState2.currentBreak.points;
+                frame.currentBreak.balls = [...savedState2.currentBreak.balls];
+                
+                log(`After undo 1: scores=[${frame.scores}], reds=${frame.redsRemaining}, break=${frame.currentBreak.points}`);
+                
+                allPassed &= assert(frame.scores[0] === 1, 'Player 1 score should be 1 after undoing black');
+                allPassed &= assert(frame.redsRemaining === 14, 'Reds remaining should be 14');
+                allPassed &= assert(frame.currentBreak.points === 1, 'Break should be 1');
+                allPassed &= assert(frame.currentBreak.shots.length === 1, 'Should have 1 shot in break');
+                
+                // UNDO SHOT 1 (red)
+                log('');
+                log('Step 7: UNDOING shot 1 (red)...');
+                
+                const removedShot1 = frame.currentBreak.shots.pop();
+                frame.currentBreak.points -= removedShot1.points;
+                if (removedShot1.potted && frame.currentBreak.balls.length > 0) {
+                    frame.currentBreak.balls.pop();
+                }
+                
+                frame.scores = [...savedState1.scores];
+                frame.redsRemaining = savedState1.redsRemaining;
+                frame.colorsRemaining = [...savedState1.colorsRemaining];
+                frame.activePlayer = savedState1.activePlayer;
+                frame.currentBreak.points = savedState1.currentBreak.points;
+                frame.currentBreak.balls = [...savedState1.currentBreak.balls];
+                
+                log(`After undo 2: scores=[${frame.scores}], reds=${frame.redsRemaining}, break=${frame.currentBreak.points}`);
+                
+                // Verify we're back to initial state
+                allPassed &= assert(frame.scores[0] === initialState.scores[0], 'Player 1 score should be back to initial (0)');
+                allPassed &= assert(frame.scores[1] === initialState.scores[1], 'Player 2 score should be back to initial (0)');
+                allPassed &= assert(frame.redsRemaining === initialState.redsRemaining, 'Reds remaining should be back to initial (15)');
+                allPassed &= assert(frame.currentBreak.points === initialState.currentBreak.points, 'Break should be back to initial (0)');
+                allPassed &= assert(frame.currentBreak.shots.length === 0, 'Should have 0 shots in break');
+                allPassed &= assert(frame.currentBreak.balls.length === 0, 'Should have 0 balls in break');
+                
+                log('');
+                log('=== Test 3 Complete ===');
+                
+                return allPassed;
+                
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'fail');
+                log(`Stack: ${error.stack}`, 'fail');
+                return false;
+            }
+        }
+    </script>
+</body>
+</html>

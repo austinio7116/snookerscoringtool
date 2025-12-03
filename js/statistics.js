@@ -21,6 +21,10 @@ class StatisticsEngine {
       stats[winnerKey].framesWon++;
     }
 
+    // Add frame scores to total points (includes foul points awarded)
+    stats.player1.totalPoints += frame.scores[0];
+    stats.player2.totalPoints += frame.scores[1];
+
     // Process all breaks in the frame
     frame.breaks.forEach(breakData => {
       const playerKey = breakData.player === 0 ? 'player1' : 'player2';
@@ -29,7 +33,6 @@ class StatisticsEngine {
       // Update break statistics
       if (breakData.points > 0) {
         playerStats.breaks.total++;
-        playerStats.totalPoints += breakData.points;
         
         if (breakData.points > playerStats.highBreak) {
           playerStats.highBreak = breakData.points;

@@ -538,27 +538,30 @@ class SnookerApp {
     // Get the last state from history
     const lastState = this.shotHistory.pop();
     
-    // Restore the frame state
-    this.currentFrame.scores = [...lastState.scores];
-    this.currentFrame.redsRemaining = lastState.redsRemaining;
-    this.currentFrame.colorsRemaining = [...lastState.colorsRemaining];
-    this.currentFrame.activePlayer = lastState.activePlayer;
-    
-    // Restore the current break state
+    // Remove the shot from current break and get its details
+    let removedShot = null;
     if (this.currentFrame.currentBreak && this.currentFrame.currentBreak.shots.length > 0) {
-      const removedShot = this.currentFrame.currentBreak.shots.pop();
+      removedShot = this.currentFrame.currentBreak.shots.pop();
+      
+      // Subtract points from break
       this.currentFrame.currentBreak.points -= removedShot.points;
       
       // Remove ball from break if it was potted
       if (removedShot.potted && this.currentFrame.currentBreak.balls.length > 0) {
         this.currentFrame.currentBreak.balls.pop();
       }
-      
-      // Restore break to the saved state
-      if (lastState.currentBreak) {
-        this.currentFrame.currentBreak.points = lastState.currentBreak.points;
-        this.currentFrame.currentBreak.balls = [...lastState.currentBreak.balls];
-      }
+    }
+    
+    // Restore the frame state (scores, table state, active player)
+    this.currentFrame.scores = [...lastState.scores];
+    this.currentFrame.redsRemaining = lastState.redsRemaining;
+    this.currentFrame.colorsRemaining = [...lastState.colorsRemaining];
+    this.currentFrame.activePlayer = lastState.activePlayer;
+    
+    // Restore break to the saved state
+    if (this.currentFrame.currentBreak && lastState.currentBreak) {
+      this.currentFrame.currentBreak.points = lastState.currentBreak.points;
+      this.currentFrame.currentBreak.balls = [...lastState.currentBreak.balls];
     }
     
     // If current break is empty, remove it and restore previous break
@@ -568,8 +571,8 @@ class SnookerApp {
         this.currentFrame.breaks[this.currentFrame.breaks.length - 1] : null;
     }
     
-    // Recalculate match statistics to update foul counts
-    this.match.statistics = StatisticsEngine.calculateMatchStatistics(this.match);
+    // Don't recalculate match statistics - this would reset totalPoints for completed frames
+    // Statistics will be recalculated when the frame is completed
     
     this.updateDisplay();
     this.saveMatch();
