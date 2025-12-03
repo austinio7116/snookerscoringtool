@@ -228,7 +228,7 @@ class UIManager {
         match.frames.filter(f => f.winner === 0).length,
         match.frames.filter(f => f.winner === 1).length
       ];
-      this.elements.frameInfo.textContent = 
+      this.elements.frameInfo.textContent =
         `Frame ${currentFrame.number} | Match: ${framesWon[0]} - ${framesWon[1]} (Best of ${match.bestOf})`;
     }
 
@@ -240,9 +240,29 @@ class UIManager {
       this.elements.player2Score.textContent = currentFrame.scores[1];
     }
 
-    // Highlight active player
+    // Update lead indicators
     const player1Container = document.getElementById('player1-container');
     const player2Container = document.getElementById('player2-container');
+    
+    // Remove existing lead indicators
+    const existingLeads = document.querySelectorAll('.player-lead');
+    existingLeads.forEach(el => el.remove());
+    
+    // Calculate and display lead
+    const scoreDiff = Math.abs(currentFrame.scores[0] - currentFrame.scores[1]);
+    if (scoreDiff > 0) {
+      const leadingPlayer = currentFrame.scores[0] > currentFrame.scores[1] ? 0 : 1;
+      const leadContainer = leadingPlayer === 0 ? player1Container : player2Container;
+      
+      if (leadContainer) {
+        const leadElement = document.createElement('div');
+        leadElement.className = 'player-lead';
+        leadElement.textContent = `Leads by ${scoreDiff}`;
+        leadContainer.appendChild(leadElement);
+      }
+    }
+
+    // Highlight active player
     if (player1Container && player2Container) {
       player1Container.classList.toggle('active', currentFrame.activePlayer === 0);
       player2Container.classList.toggle('active', currentFrame.activePlayer === 1);
@@ -309,14 +329,21 @@ class UIManager {
       black: 7
     };
 
+    // Calculate points remaining on the table
+    const redsPoints = frame.redsRemaining * 8; // Each red can be followed by black (1+7)
+    const colorsPoints = frame.colorsRemaining.reduce((sum, color) => sum + ballValues[color], 0);
+    const totalPointsRemaining = redsPoints + colorsPoints;
+
     const redsHtml = `<span class="table-reds">Reds: ${frame.redsRemaining}</span>`;
     const colorsHtml = frame.colorsRemaining.map(color =>
       `<span class="table-color ball-${color}">${ballValues[color]}</span>`
     ).join('');
+    const pointsHtml = `<span class="table-points">Points Remaining: ${totalPointsRemaining}</span>`;
 
     this.elements.tableState.innerHTML = `
       <div class="table-state-content">
         ${redsHtml}
+        ${pointsHtml}
         <div class="table-colors">${colorsHtml}</div>
       </div>
     `;

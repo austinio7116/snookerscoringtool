@@ -304,6 +304,16 @@ body {
   color: white;
 }
 
+.player-lead {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary-gold);
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+}
+
 .vs-divider {
   display: flex;
   align-items: center;
@@ -423,6 +433,13 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.table-points {
+  color: var(--primary-gold);
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
 }
 
 /* --- Shot Input Panel --- */
