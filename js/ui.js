@@ -1053,16 +1053,27 @@ class UIManager {
       ];
       
       const isCompleted = match.status === 'completed';
-      const buttonText = isCompleted ? 'View Stats' : 'Resume';
+      const buttonText = isCompleted ? 'View Stats' : 'Resume Match';
       const buttonClass = isCompleted ? 'btn-resume btn-view-stats' : 'btn-resume';
+      
+      // Calculate frames played vs total
+      const framesPlayed = match.frames.filter(f => f.winner !== null).length;
+      const totalFrames = match.bestOf;
+      const progressText = isCompleted
+        ? `Final: ${framesWon[0]} - ${framesWon[1]}`
+        : `In Progress: ${framesWon[0]} - ${framesWon[1]} (${framesPlayed}/${totalFrames} frames)`;
+      
+      // Status badge text
+      const statusText = isCompleted ? 'Completed' : 'In Progress';
+      const statusClass = isCompleted ? 'completed' : 'in-progress';
 
       return `
         <div class="history-item" data-match-id="${match.id}">
           <div class="history-info">
             <h3>${match.players[0]} vs ${match.players[1]}</h3>
-            <p>Best of ${match.bestOf} | Score: ${framesWon[0]} - ${framesWon[1]}</p>
+            <p>Best of ${match.bestOf} | ${progressText}</p>
             <p class="history-date">${new Date(match.created).toLocaleString()}</p>
-            <span class="history-status ${match.status}">${match.status}</span>
+            <span class="history-status ${statusClass}">${statusText}</span>
           </div>
           <div class="history-actions">
             <button class="${buttonClass}" data-match-id="${match.id}">${buttonText}</button>

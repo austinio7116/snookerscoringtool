@@ -135,6 +135,13 @@ class SnookerApp {
       return;
     }
 
+    // Auto-save current match to history before starting a new one
+    const existingMatch = StorageManager.loadCurrentMatch();
+    if (existingMatch && existingMatch.status !== 'completed') {
+      StorageManager.saveToHistory(existingMatch);
+      this.ui.showNotification('Previous match saved to history', 'info');
+    }
+
     this.match = DataModel.createMatch(player1, player2, bestOf);
     this.startNewFrame();
     this.ui.showView('match');
