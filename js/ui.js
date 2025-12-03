@@ -400,6 +400,16 @@ class UIManager {
       bestOf: match.bestOf
     };
 
+    // Hide/show back to match button based on match status
+    const backToMatchBtn = document.getElementById('back-to-match-btn');
+    if (backToMatchBtn) {
+      if (match.status === 'completed') {
+        backToMatchBtn.style.display = 'none';
+      } else {
+        backToMatchBtn.style.display = 'inline-block';
+      }
+    }
+
     const player1Stats = stats.player1Stats;
     const player2Stats = stats.player2Stats;
 
