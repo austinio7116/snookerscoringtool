@@ -1559,15 +1559,33 @@ body {
     flex-shrink: 0;
   }
   
-  /* Shot Actions - Keep as grid but more compact */
+  /* Shot Actions - Full width buttons on mobile */
   .shot-actions {
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 8px;
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
   
   .btn-action {
-    padding: 12px 8px;
-    font-size: 0.75rem;
+    padding: 20px 16px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+  
+  /* Mobile: Enhanced button colors for better visibility */
+  .btn-miss {
+    color: #ffffff !important;
+    border-left-color: #ffffff;
+  }
+  
+  .btn-safety {
+    color: #4caf50 !important;
+    border-left-color: #4caf50;
+  }
+  
+  .btn-foul {
+    color: #ff1744 !important;
+    border-left-color: #ff1744;
   }
   
   /* Match Actions - More compact footer */
