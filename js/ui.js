@@ -540,6 +540,16 @@ class UIManager {
                 <td class="stat-value ${player2Stats.highBreak > player1Stats.highBreak ? 'stat-leader' : ''}">${player2Stats.highBreak}</td>
               </tr>
               <tr>
+                <td class="stat-label">Pot Success</td>
+                <td class="stat-value ${parseFloat(player1Stats.potPercentage) > parseFloat(player2Stats.potPercentage) ? 'stat-leader' : ''}">${player1Stats.potPercentage}%</td>
+                <td class="stat-value ${parseFloat(player2Stats.potPercentage) > parseFloat(player1Stats.potPercentage) ? 'stat-leader' : ''}">${player2Stats.potPercentage}%</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Average Shot Time</td>
+                <td class="stat-value ${parseFloat(player1Stats.averageShotTime) < parseFloat(player2Stats.averageShotTime) ? 'stat-leader' : ''}">${player1Stats.averageShotTime}s</td>
+                <td class="stat-value ${parseFloat(player2Stats.averageShotTime) < parseFloat(player1Stats.averageShotTime) ? 'stat-leader' : ''}">${player2Stats.averageShotTime}s</td>
+              </tr>
+              <tr>
                 <td class="stat-label">Points per Visit</td>
                 <td class="stat-value ${parseFloat(player1Stats.pointsPerVisit) > parseFloat(player2Stats.pointsPerVisit) ? 'stat-leader' : ''}">${player1Stats.pointsPerVisit}</td>
                 <td class="stat-value ${parseFloat(player2Stats.pointsPerVisit) > parseFloat(player1Stats.pointsPerVisit) ? 'stat-leader' : ''}">${player2Stats.pointsPerVisit}</td>
