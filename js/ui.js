@@ -241,26 +241,31 @@ class UIManager {
     }
 
     // Update lead indicators
-    const player1Container = document.getElementById('player1-container');
-    const player2Container = document.getElementById('player2-container');
-    
-    // Remove existing lead indicators
-    const existingLeads = document.querySelectorAll('.player-lead');
-    existingLeads.forEach(el => el.remove());
+    const player1Lead = document.getElementById('player1-lead');
+    const player2Lead = document.getElementById('player2-lead');
     
     // Calculate and display lead
     const scoreDiff = Math.abs(currentFrame.scores[0] - currentFrame.scores[1]);
+    
     if (scoreDiff > 0) {
       const leadingPlayer = currentFrame.scores[0] > currentFrame.scores[1] ? 0 : 1;
-      const leadContainer = leadingPlayer === 0 ? player1Container : player2Container;
       
-      if (leadContainer) {
-        const leadElement = document.createElement('div');
-        leadElement.className = 'player-lead';
-        leadElement.textContent = `Leads by ${scoreDiff}`;
-        leadContainer.appendChild(leadElement);
+      if (leadingPlayer === 0 && player1Lead) {
+        player1Lead.textContent = `Leads by ${scoreDiff}`;
+        if (player2Lead) player2Lead.innerHTML = '&nbsp;';
+      } else if (leadingPlayer === 1 && player2Lead) {
+        player2Lead.textContent = `Leads by ${scoreDiff}`;
+        if (player1Lead) player1Lead.innerHTML = '&nbsp;';
       }
+    } else {
+      // Scores are tied - show non-breaking space to maintain layout
+      if (player1Lead) player1Lead.innerHTML = '&nbsp;';
+      if (player2Lead) player2Lead.innerHTML = '&nbsp;';
     }
+    
+    // Highlight active player
+    const player1Container = document.getElementById('player1-container');
+    const player2Container = document.getElementById('player2-container');
 
     // Highlight active player
     if (player1Container && player2Container) {
@@ -272,8 +277,18 @@ class UIManager {
   updateCurrentBreak(breakData) {
     if (!this.elements.currentBreak) return;
 
+    const breakPointsEl = this.elements.currentBreak.querySelector('.break-points');
+    const breakBallsEl = this.elements.currentBreak.querySelector('.break-balls');
+    
+    if (!breakPointsEl || !breakBallsEl) return;
+
+    // Always show the break points, even if 0
+    const points = (breakData && breakData.points) ? breakData.points : 0;
+    breakPointsEl.textContent = points;
+
+    // Update balls if there's a break in progress
     if (!breakData || breakData.points === 0) {
-      this.elements.currentBreak.innerHTML = '<div class="break-info">No break in progress</div>';
+      breakBallsEl.innerHTML = '';
       return;
     }
 
@@ -297,12 +312,7 @@ class UIManager {
       })
       .join('');
 
-    this.elements.currentBreak.innerHTML = `
-      <div class="break-info">
-        <div class="break-points">${breakData.points}</div>
-        <div class="break-balls">${ballsHtml}</div>
-      </div>
-    `;
+    breakBallsEl.innerHTML = ballsHtml;
   }
 
   updateTimer(duration, isPaused) {
