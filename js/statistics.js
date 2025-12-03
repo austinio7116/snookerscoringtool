@@ -13,6 +13,61 @@ class StatisticsEngine {
 
     return stats;
   }
+  static calculateSafetySuccess(frame) {
+    // Analyze breaks sequentially to determine safety success
+    // A safety is successful if the opponent's next action is:
+    // - A foul
+    // - A miss
+    // - Another safety
+    // A safety is unsuccessful if the opponent pots a ball
+    
+    const safetyResults = {
+      player1: { attempted: 0, successful: 0 },
+      player2: { attempted: 0, successful: 0 }
+    };
+
+    for (let i = 0; i < frame.breaks.length; i++) {
+      const currentBreak = frame.breaks[i];
+      const nextBreak = i + 1 < frame.breaks.length ? frame.breaks[i + 1] : null;
+      
+      // Check if this break contains any safety shots
+      currentBreak.shots.forEach(shot => {
+        if (shot.isSafety) {
+          const playerKey = currentBreak.player === 0 ? 'player1' : 'player2';
+          safetyResults[playerKey].attempted++;
+          
+          // Determine if safety was successful by checking opponent's response
+          if (nextBreak && nextBreak.player !== currentBreak.player) {
+            // Check opponent's first shot in their next break
+            if (nextBreak.shots.length > 0) {
+              const opponentFirstShot = nextBreak.shots[0];
+              
+              // Safety is successful if opponent:
+              // 1. Fouled
+              // 2. Missed (didn't pot)
+              // 3. Played another safety
+              if (opponentFirstShot.isFoul || 
+                  !opponentFirstShot.potted || 
+                  opponentFirstShot.isSafety) {
+                safetyResults[playerKey].successful++;
+              }
+              // If opponent potted a ball (and it wasn't a foul or safety), safety was unsuccessful
+            } else {
+              // If opponent's break has no shots, consider it successful (they didn't score)
+              safetyResults[playerKey].successful++;
+            }
+          } else {
+            // No next break or same player continues (e.g., end of frame)
+            // Consider successful as opponent didn't get a chance to score
+            safetyResults[playerKey].successful++;
+          }
+        }
+      });
+    }
+    
+    return safetyResults;
+  }
+
 
   static processFrameStatistics(frame, stats) {
     // Update frame wins
@@ -64,6 +119,11 @@ class StatisticsEngine {
         this.processShotStatistics(shot, playerStats);
       });
     });
+
+    // Calculate safety success dynamically by analyzing break sequences
+    const safetyResults = this.calculateSafetySuccess(frame);
+    stats.player1.safeties.successful = safetyResults.player1.successful;
+    stats.player2.safeties.successful = safetyResults.player2.successful;
   }
 
   static processShotStatistics(shot, playerStats) {
@@ -86,15 +146,10 @@ class StatisticsEngine {
       }
     }
 
-    // Safety statistics
+    // Safety statistics - only count attempts here
+    // Success will be calculated dynamically by analyzing opponent's response
     if (shot.isSafety) {
       playerStats.safeties.attempted++;
-      // Safety is successful if opponent doesn't score on next visit
-      // This would need to be calculated in context of the next break
-      // For now, we'll mark it as successful if the shot was missed (intended)
-      if (!shot.potted) {
-        playerStats.safeties.successful++;
-      }
     }
 
     // Escape statistics

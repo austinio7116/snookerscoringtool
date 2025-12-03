@@ -585,6 +585,11 @@ class UIManager {
                 <td class="stat-value ${player2Stats.breaks.century > player1Stats.breaks.century ? 'stat-leader' : ''}">${player2Stats.breaks.century}</td>
               </tr>
               <tr>
+                <td class="stat-label">Safety Success</td>
+                <td class="stat-value ${parseFloat(player1Stats.safetySuccessRate) > parseFloat(player2Stats.safetySuccessRate) ? 'stat-leader' : ''}">${player1Stats.safetySuccessRate}%</td>
+                <td class="stat-value ${parseFloat(player2Stats.safetySuccessRate) > parseFloat(player1Stats.safetySuccessRate) ? 'stat-leader' : ''}">${player2Stats.safetySuccessRate}%</td>
+              </tr>
+              <tr>
                 <td class="stat-label">Fouls</td>
                 <td class="stat-value ${player1Stats.fouls < player2Stats.fouls ? 'stat-leader' : ''}">${player1Stats.fouls}</td>
                 <td class="stat-value ${player2Stats.fouls < player1Stats.fouls ? 'stat-leader' : ''}">${player2Stats.fouls}</td>
