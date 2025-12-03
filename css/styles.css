@@ -459,7 +459,7 @@ body {
 .table-points {
   color: var(--primary-gold);
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 0.8rem;
   letter-spacing: 0.5px;
 }
 
@@ -1645,6 +1645,7 @@ body {
   
   /* Dashboard Stats Cards Mobile */
   .dashboard-stats {
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
     margin-bottom: 12px;
   }
@@ -1753,13 +1754,32 @@ body {
   
   .break-item {
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
     gap: 8px;
   }
   
-  .break-player,
-  .break-points,
-  .break-frame {
+  .break-player {
+    grid-column: 1;
+    grid-row: 1;
     text-align: left;
+  }
+  
+  .break-points {
+    grid-column: 1;
+    grid-row: 1;
+    text-align: center;
+  }
+  
+  .break-frame {
+    grid-column: 1;
+    grid-row: 1;
+    text-align: right;
+  }
+  
+  .break-balls {
+    grid-column: 1;
+    grid-row: 2;
+    justify-content: center;
   }
   
   /* Frame History Table Mobile Optimization */
