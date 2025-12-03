@@ -67,8 +67,21 @@ class UIManager {
       this.elements.newMatchBtn.addEventListener('click', () => this.showView('setup'));
     }
     if (this.elements.loadMatchBtn) {
-      this.elements.loadMatchBtn.addEventListener('click', () => this.handleLoadMatch());
+      this.elements.loadMatchBtn.addEventListener('click', () => {
+        // Resume current match from localStorage
+        const existingMatch = StorageManager.loadCurrentMatch();
+        if (existingMatch && window.app) {
+          window.app.loadMatch(existingMatch);
+        }
+      });
     }
+    
+    // Import match button
+    const importMatchBtn = document.getElementById('import-match-btn');
+    if (importMatchBtn) {
+      importMatchBtn.addEventListener('click', () => this.handleImportMatch());
+    }
+    
     if (this.elements.viewHistoryBtn) {
       this.elements.viewHistoryBtn.addEventListener('click', () => this.showView('history'));
     }
@@ -150,7 +163,7 @@ class UIManager {
     }
   }
 
-  handleLoadMatch() {
+  handleImportMatch() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
@@ -166,7 +179,7 @@ class UIManager {
               window.app.loadMatch(match);
             }
           } else {
-            alert('Failed to load match. Invalid file format.');
+            alert('Failed to import match. Invalid file format.');
           }
         };
         reader.readAsText(file);
@@ -783,14 +796,14 @@ class UIManager {
         '<div class="analysis-title">Match Analysis</div>' +
       '</div>' +
       '<div class="analysis-tabs">' +
-        '<button class="analysis-tab active" data-chart="scores">Scores</button>' +
+        '<button class="analysis-tab active" data-chart="diff">Diff</button>' +
+        '<button class="analysis-tab" data-chart="scores">Scores</button>' +
         '<button class="analysis-tab" data-chart="breaks">Breaks</button>' +
         '<button class="analysis-tab" data-chart="total-points">Total Points</button>' +
-        '<button class="analysis-tab" data-chart="diff">Diff</button>' +
       '</div>' +
       '<div class="chart-container">' +
         '<div class="chart-canvas" id="analysis-chart">' +
-          this.renderScoresChart(completedFrames, players, frames.length > 0 ? window.currentMatchData.bestOf : 1) +
+          this.renderDiffChart(completedFrames, players, frames.length > 0 ? window.currentMatchData.bestOf : 1) +
         '</div>' +
         '<div class="chart-legend">' +
           '<div class="legend-item">' +

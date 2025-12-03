@@ -9,6 +9,8 @@ class SnookerApp {
     this.selectedBall = null;
     this.shotStartTime = null;
     this.shotAction = 'pot'; // Default action: pot, miss, safety, foul
+    this.shotHistory = []; // Track shots for undo functionality
+    this.playStarted = false; // Track if play has started
   }
 
   init() {
@@ -26,6 +28,11 @@ class SnookerApp {
     }
 
     // Match screen
+    const startPlayBtn = document.getElementById('start-play-btn');
+    if (startPlayBtn) {
+      startPlayBtn.addEventListener('click', () => this.handleStartPlay());
+    }
+
     const pauseBtn = document.getElementById('pause-btn');
     if (pauseBtn) {
       pauseBtn.addEventListener('click', () => this.handlePauseToggle());
@@ -76,9 +83,9 @@ class SnookerApp {
       viewStatsBtn.addEventListener('click', () => this.handleViewStats());
     }
 
-    const saveMatchBtn = document.getElementById('save-match-btn');
-    if (saveMatchBtn) {
-      saveMatchBtn.addEventListener('click', () => this.handleSaveMatch());
+    const undoShotBtn = document.getElementById('undo-shot-btn');
+    if (undoShotBtn) {
+      undoShotBtn.addEventListener('click', () => this.handleUndoShot());
     }
 
     const exportMatchBtn = document.getElementById('export-match-btn');
@@ -112,8 +119,6 @@ class SnookerApp {
       const loadBtn = document.getElementById('load-match-btn');
       if (loadBtn) {
         loadBtn.style.display = 'block';
-        loadBtn.textContent = 'Continue Current Match';
-        loadBtn.onclick = () => this.loadMatch(existingMatch);
       }
     }
   }
@@ -141,14 +146,22 @@ class SnookerApp {
     this.match.frames.push(this.currentFrame);
     this.match.currentFrame = this.match.frames.length - 1;
 
+    // Clear shot history for new frame
+    this.shotHistory = [];
+
+    // Reset play started flag
+    this.playStarted = false;
+
     // Start new break for first player
     this.startNewBreak();
 
-    // Start timer
+    // Start timer but immediately pause it
     this.timer.startFrame();
-    this.timer.startShot();
+    this.timer.pauseFrame();
 
     this.updateDisplay();
+    this.disableShotInputs();
+    this.showStartPlayButton();
   }
 
   startNewBreak() {
@@ -170,6 +183,11 @@ class SnookerApp {
   }
 
   handleMiss() {
+    // Don't allow actions if play hasn't started or timer is paused
+    if (!this.playStarted || this.timer.isPaused) {
+      return;
+    }
+
     // Use selected ball or default to red
     const ball = this.selectedBall || 'red';
 
@@ -185,6 +203,11 @@ class SnookerApp {
   }
 
   handleSafety() {
+    // Don't allow actions if play hasn't started or timer is paused
+    if (!this.playStarted || this.timer.isPaused) {
+      return;
+    }
+
     // Use selected ball or default to red
     const ball = this.selectedBall || 'red';
 
@@ -200,6 +223,11 @@ class SnookerApp {
   }
 
   showFoulDialog() {
+    // Don't allow actions if play hasn't started or timer is paused
+    if (!this.playStarted || this.timer.isPaused) {
+      return;
+    }
+
     const dialog = document.getElementById('foul-dialog');
     if (dialog) {
       dialog.style.display = 'flex';
@@ -230,18 +258,26 @@ class SnookerApp {
 
     const shot = DataModel.createShot(this.selectedBall, false, attributes);
     
-    // Award foul points to opponent
-    const opponent = this.currentFrame.activePlayer === 0 ? 1 : 0;
-    this.currentFrame.scores[opponent] += foulPoints;
-
     // Process shot but handle player switching based on "play again" option
-    this.processFoulShot(shot, playAgain);
+    // Pass the foul points to be awarded in processFoulShot
+    this.processFoulShot(shot, playAgain, true, foulPoints);
     
     // Reset the checkbox for next time
     document.getElementById('foul-play-again').checked = false;
   }
 
-  processFoulShot(shot, playAgain) {
+  processFoulShot(shot, playAgain, saveState = true, foulPoints = 0) {
+    // Save state for undo BEFORE awarding foul points
+    if (saveState) {
+      this.saveStateForUndo();
+    }
+    
+    // Award foul points to opponent AFTER saving state
+    if (foulPoints > 0) {
+      const opponent = this.currentFrame.activePlayer === 0 ? 1 : 0;
+      this.currentFrame.scores[opponent] += foulPoints;
+    }
+    
     // Add shot to current break
     if (!this.currentFrame.currentBreak) {
       this.startNewBreak();
@@ -274,6 +310,9 @@ class SnookerApp {
   }
 
   processShot(shot, potted) {
+    // Save state for undo
+    this.saveStateForUndo();
+    
     // Add shot to current break
     if (!this.currentFrame.currentBreak) {
       this.startNewBreak();
@@ -395,13 +434,28 @@ class SnookerApp {
     this.handleViewStats();
   }
 
+  handleStartPlay() {
+    if (!this.playStarted) {
+      this.playStarted = true;
+      this.timer.resumeFrame();
+      this.timer.startShot();
+      this.enableShotInputs();
+      this.hideStartPlayButton();
+      this.showPauseButton();
+      this.ui.showNotification('Play started!', 'success');
+      this.updateDisplay();
+    }
+  }
+
   handlePauseToggle() {
     if (this.timer.isPaused) {
       this.timer.resumeFrame();
       this.timer.startShot();
+      this.enableShotInputs();
       this.ui.showNotification('Timer resumed', 'info');
     } else {
       this.timer.pauseFrame();
+      this.disableShotInputs();
       this.ui.showNotification('Timer paused', 'info');
     }
     this.updateDisplay();
@@ -413,12 +467,56 @@ class SnookerApp {
     this.ui.showView('stats');
   }
 
-  handleSaveMatch() {
-    if (this.saveMatch()) {
-      this.ui.showNotification('Match saved successfully', 'success');
-    } else {
-      this.ui.showNotification('Failed to save match', 'error');
+  async handleUndoShot() {
+    if (this.shotHistory.length === 0) {
+      this.ui.showNotification('No shots to undo', 'info');
+      return;
     }
+
+    const confirmed = await this.ui.confirmAction('Undo the last shot?');
+    if (!confirmed) {
+      return;
+    }
+
+    // Get the last state from history
+    const lastState = this.shotHistory.pop();
+    
+    // Restore the frame state
+    this.currentFrame.scores = [...lastState.scores];
+    this.currentFrame.redsRemaining = lastState.redsRemaining;
+    this.currentFrame.colorsRemaining = [...lastState.colorsRemaining];
+    this.currentFrame.activePlayer = lastState.activePlayer;
+    
+    // Restore the current break state
+    if (this.currentFrame.currentBreak && this.currentFrame.currentBreak.shots.length > 0) {
+      const removedShot = this.currentFrame.currentBreak.shots.pop();
+      this.currentFrame.currentBreak.points -= removedShot.points;
+      
+      // Remove ball from break if it was potted
+      if (removedShot.potted && this.currentFrame.currentBreak.balls.length > 0) {
+        this.currentFrame.currentBreak.balls.pop();
+      }
+      
+      // Restore break to the saved state
+      if (lastState.currentBreak) {
+        this.currentFrame.currentBreak.points = lastState.currentBreak.points;
+        this.currentFrame.currentBreak.balls = [...lastState.currentBreak.balls];
+      }
+    }
+    
+    // If current break is empty, remove it and restore previous break
+    if (this.currentFrame.currentBreak && this.currentFrame.currentBreak.shots.length === 0) {
+      this.currentFrame.breaks.pop();
+      this.currentFrame.currentBreak = lastState.currentBreak ?
+        this.currentFrame.breaks[this.currentFrame.breaks.length - 1] : null;
+    }
+    
+    // Recalculate match statistics to update foul counts
+    this.match.statistics = StatisticsEngine.calculateMatchStatistics(this.match);
+    
+    this.updateDisplay();
+    this.saveMatch();
+    this.ui.showNotification('Shot undone', 'success');
   }
 
   handleExportMatch() {
@@ -461,12 +559,30 @@ class SnookerApp {
       return;
     }
 
+    // Check if play was already started (if there are any shots recorded)
+    const hasShots = this.currentFrame.breaks.some(b => b.shots.length > 0);
+    this.playStarted = hasShots;
+
     // Restore timer state if frame is in progress
     if (!this.currentFrame.endTime) {
       this.timer.startFrame();
-      if (this.currentFrame.isPaused) {
+      if (this.currentFrame.isPaused || !this.playStarted) {
         this.timer.pauseFrame();
       }
+    }
+
+    // Update UI based on play state
+    if (this.playStarted) {
+      this.hideStartPlayButton();
+      this.showPauseButton();
+      if (!this.timer.isPaused) {
+        this.enableShotInputs();
+      } else {
+        this.disableShotInputs();
+      }
+    } else {
+      this.showStartPlayButton();
+      this.disableShotInputs();
     }
 
     StorageManager.saveCurrentMatch(this.match);
@@ -478,6 +594,31 @@ class SnookerApp {
   refreshHistory() {
     const history = StorageManager.loadMatchHistory();
     this.ui.renderHistory(history);
+  }
+
+  saveStateForUndo() {
+    if (!this.currentFrame) return;
+    
+    // Save current state (deep copy to avoid reference issues)
+    const state = {
+      scores: [...this.currentFrame.scores],
+      redsRemaining: this.currentFrame.redsRemaining,
+      colorsRemaining: [...this.currentFrame.colorsRemaining],
+      activePlayer: this.currentFrame.activePlayer,
+      currentBreak: this.currentFrame.currentBreak ? {
+        player: this.currentFrame.currentBreak.player,
+        points: this.currentFrame.currentBreak.points,
+        balls: [...this.currentFrame.currentBreak.balls],
+        shots: this.currentFrame.currentBreak.shots.length
+      } : null
+    };
+    
+    this.shotHistory.push(state);
+    
+    // Keep only last 10 shots for undo
+    if (this.shotHistory.length > 10) {
+      this.shotHistory.shift();
+    }
   }
 
   saveMatch() {
@@ -501,6 +642,11 @@ class SnookerApp {
   }
 
   selectBall(ball) {
+    // Don't allow ball selection if play hasn't started or timer is paused
+    if (!this.playStarted || this.timer.isPaused) {
+      return;
+    }
+
     this.selectedBall = ball;
     
     // Highlight selected ball
@@ -536,6 +682,81 @@ class SnookerApp {
     document.querySelectorAll('.ball-btn').forEach(btn => {
       btn.classList.remove('selected');
     });
+  }
+
+  disableShotInputs() {
+    // Disable ball selector buttons
+    document.querySelectorAll('.ball-btn').forEach(btn => {
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+      btn.style.cursor = 'not-allowed';
+    });
+
+    // Disable action buttons
+    const actionButtons = [
+      document.getElementById('action-miss-btn'),
+      document.getElementById('action-safety-btn'),
+      document.getElementById('action-foul-btn'),
+      document.getElementById('end-break-btn'),
+      document.getElementById('end-frame-btn'),
+      document.getElementById('undo-shot-btn')
+    ];
+
+    actionButtons.forEach(btn => {
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+      }
+    });
+  }
+
+  enableShotInputs() {
+    // Enable ball selector buttons
+    document.querySelectorAll('.ball-btn').forEach(btn => {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+    });
+
+    // Enable action buttons
+    const actionButtons = [
+      document.getElementById('action-miss-btn'),
+      document.getElementById('action-safety-btn'),
+      document.getElementById('action-foul-btn'),
+      document.getElementById('end-break-btn'),
+      document.getElementById('end-frame-btn'),
+      document.getElementById('undo-shot-btn')
+    ];
+
+    actionButtons.forEach(btn => {
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+      }
+    });
+  }
+
+  showStartPlayButton() {
+    const startPlayBtn = document.getElementById('start-play-btn');
+    if (startPlayBtn) {
+      startPlayBtn.style.display = 'block';
+    }
+  }
+
+  hideStartPlayButton() {
+    const startPlayBtn = document.getElementById('start-play-btn');
+    if (startPlayBtn) {
+      startPlayBtn.style.display = 'none';
+    }
+  }
+
+  showPauseButton() {
+    const pauseBtn = document.getElementById('pause-btn');
+    if (pauseBtn) {
+      pauseBtn.style.display = 'block';
+    }
   }
 }
 

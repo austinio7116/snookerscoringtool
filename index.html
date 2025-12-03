@@ -22,7 +22,11 @@
         </button>
         <button id="load-match-btn" class="btn btn-secondary btn-large" style="display: none;">
           <span class="btn-icon">▶</span>
-          Continue Current Match
+          Resume Current Match
+        </button>
+        <button id="import-match-btn" class="btn btn-secondary btn-large">
+          <span class="btn-icon">📥</span>
+          Import Match
         </button>
         <button id="view-history-btn" class="btn btn-secondary btn-large">
           <span class="btn-icon">📋</span>
@@ -88,7 +92,8 @@
       <header id="match-header" class="match-header">
         <div id="frame-info" class="frame-info">Frame 1 | Match: 0 - 0 (Best of 7)</div>
         <div id="timer-display" class="timer-display">0:00</div>
-        <button id="pause-btn" class="btn btn-small">⏸ Pause</button>
+        <button id="start-play-btn" class="btn btn-small btn-primary">▶ Start Play</button>
+        <button id="pause-btn" class="btn btn-small" style="display: none;">⏸ Pause</button>
       </header>
 
       <!-- Score Display -->
@@ -162,10 +167,11 @@
 
       <!-- Match Actions -->
       <div class="match-actions">
+        <button id="undo-shot-btn" class="btn btn-warning">Undo Last Shot</button>
         <button id="end-break-btn" class="btn btn-secondary">End Break</button>
         <button id="end-frame-btn" class="btn btn-secondary">End Frame</button>
         <button id="view-stats-btn" class="btn btn-info">View Stats</button>
-        <button id="save-match-btn" class="btn btn-success">Save Match</button>
+        <button id="export-match-btn" class="btn btn-success">Export Match</button>
       </div>
     </div>
   </div>
