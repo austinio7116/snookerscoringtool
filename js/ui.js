@@ -277,6 +277,7 @@ class UIManager {
   updateCurrentBreak(breakData) {
     if (!this.elements.currentBreak) return;
 
+    const breakHeaderEl = this.elements.currentBreak.querySelector('.break-header');
     const breakPointsEl = this.elements.currentBreak.querySelector('.break-points');
     const breakBallsEl = this.elements.currentBreak.querySelector('.break-balls');
     
@@ -285,6 +286,11 @@ class UIManager {
     // Always show the break points, even if 0
     const points = (breakData && breakData.points) ? breakData.points : 0;
     breakPointsEl.textContent = points;
+    
+    // Update header to include break total
+    if (breakHeaderEl) {
+      breakHeaderEl.textContent = `Current Break: ${points}`;
+    }
 
     // Update balls if there's a break in progress
     if (!breakData || breakData.points === 0) {
