@@ -162,12 +162,14 @@ class DataModel {
       // Only remove colors permanently when all reds are gone AND we're in the clearance phase
       // Check if this was potted after the last red was already cleared
       if (frame.redsRemaining === 0) {
-        // Check if the previous shot was also a color (meaning we're in clearance)
+        // Check if the shot before the current one was a red
+        // (The current shot has already been added to the shots array)
         let inClearance = true;
-        if (frame.currentBreak && frame.currentBreak.shots.length > 0) {
-          const lastShot = frame.currentBreak.shots[frame.currentBreak.shots.length - 1];
-          // If last shot was red, this color goes back on the table
-          if (lastShot.ball === 'red') {
+        if (frame.currentBreak && frame.currentBreak.shots.length > 1) {
+          // Look at the second-to-last shot (the one before the current color)
+          const previousShot = frame.currentBreak.shots[frame.currentBreak.shots.length - 2];
+          // If the previous shot was red, this color goes back on the table
+          if (previousShot.ball === 'red') {
             inClearance = false;
           }
         }
