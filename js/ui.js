@@ -188,6 +188,31 @@ class UIManager {
     input.click();
   }
 
+  async showAlert(message) {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'confirm-overlay';
+      overlay.innerHTML = `
+        <div class="confirm-dialog">
+          <div class="confirm-message">${message.replace(/\n/g, '<br>')}</div>
+          <div class="confirm-buttons">
+            <button class="btn btn-primary" id="alert-ok-btn">OK</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+
+      const okBtn = overlay.querySelector('#alert-ok-btn');
+      okBtn.addEventListener('click', () => {
+        document.body.removeChild(overlay);
+        resolve();
+      });
+
+      // Focus the OK button
+      setTimeout(() => okBtn.focus(), 100);
+    });
+  }
+
   renderBallSelector(availableBalls, onBallSelect) {
     if (!this.elements.ballSelector) return;
 
@@ -382,12 +407,21 @@ class UIManager {
     const currentFrame = match.frames[match.frames.length - 1];
     const isFrameActive = currentFrame && currentFrame.winner === null;
     const currentFrameScores = isFrameActive ? ` (${currentFrame.scores[0]} - ${currentFrame.scores[1]})` : '';
+    
+    // Check if match is completed and determine winner
+    const isMatchComplete = match.status === 'completed';
+    const matchWinner = match.matchWinner !== undefined ? match.matchWinner : null;
+    const winnerClass1 = isMatchComplete && matchWinner === 0 ? 'match-winner' : '';
+    const winnerClass2 = isMatchComplete && matchWinner === 1 ? 'match-winner' : '';
+    const winnerName = matchWinner !== null ? match.players[matchWinner] : '';
+    const winnerColorClass = matchWinner !== null ? (matchWinner === 0 ? 'player1-color' : 'player2-color') : '';
 
     this.elements.statsContent.innerHTML = `
       <!-- Overall Match Score -->
       <div class="overall-match-score">
+        ${isMatchComplete && winnerName ? `<div class="match-complete-banner ${winnerColorClass}">🏆 ${winnerName} WINS!</div>` : ''}
         <div class="match-score-container">
-          <div class="match-score-player">
+          <div class="match-score-player ${winnerClass1}">
             <div class="match-score-name player1-color">${match.players[0]}</div>
             <div class="match-score-frames">${stats.currentScore[0]}</div>
           </div>
@@ -395,7 +429,7 @@ class UIManager {
             <div class="match-score-label">SCORE</div>
             ${isFrameActive ? `<div class="current-frame-score">${currentFrameScores}</div>` : ''}
           </div>
-          <div class="match-score-player">
+          <div class="match-score-player ${winnerClass2}">
             <div class="match-score-name player2-color">${match.players[1]}</div>
             <div class="match-score-frames">${stats.currentScore[1]}</div>
           </div>
@@ -992,6 +1026,10 @@ class UIManager {
         match.frames.filter(f => f.winner === 0).length,
         match.frames.filter(f => f.winner === 1).length
       ];
+      
+      const isCompleted = match.status === 'completed';
+      const buttonText = isCompleted ? 'View Stats' : 'Resume';
+      const buttonClass = isCompleted ? 'btn-resume btn-view-stats' : 'btn-resume';
 
       return `
         <div class="history-item" data-match-id="${match.id}">
@@ -1002,7 +1040,7 @@ class UIManager {
             <span class="history-status ${match.status}">${match.status}</span>
           </div>
           <div class="history-actions">
-            <button class="btn-resume" data-match-id="${match.id}">Resume</button>
+            <button class="${buttonClass}" data-match-id="${match.id}">${buttonText}</button>
             <button class="btn-delete" data-match-id="${match.id}">Delete</button>
           </div>
         </div>

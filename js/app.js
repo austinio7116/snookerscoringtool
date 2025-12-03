@@ -430,9 +430,15 @@ class SnookerApp {
     const winner = this.currentFrame.winner !== null ?
       this.match.players[this.currentFrame.winner] : 'Draw';
     
+    const framesWon = [
+      this.match.frames.filter(f => f.winner === 0).length,
+      this.match.frames.filter(f => f.winner === 1).length
+    ];
+    
     const message = `Frame ${this.currentFrame.number} complete!\n` +
       `Winner: ${winner}\n` +
-      `Score: ${this.currentFrame.scores[0]} - ${this.currentFrame.scores[1]}\n\n` +
+      `Score: ${this.currentFrame.scores[0]} - ${this.currentFrame.scores[1]}\n` +
+      `Match Score: ${framesWon[0]} - ${framesWon[1]}\n\n` +
       `Start next frame?`;
 
     const confirmed = await this.ui.confirmAction(message);
@@ -441,22 +447,38 @@ class SnookerApp {
     }
   }
 
-  completeMatch() {
+  async completeMatch() {
     this.match.status = 'completed';
     this.match.updated = new Date().toISOString();
     
-    StorageManager.saveToHistory(this.match);
-    StorageManager.clearCurrentMatch();
-
     const framesWon = [
       this.match.frames.filter(f => f.winner === 0).length,
       this.match.frames.filter(f => f.winner === 1).length
     ];
 
-    const winner = framesWon[0] > framesWon[1] ? 
-      this.match.players[0] : this.match.players[1];
+    const matchWinner = framesWon[0] > framesWon[1] ? 0 : 1;
+    const winnerName = this.match.players[matchWinner];
+    
+    // Set match winner BEFORE saving to history
+    this.match.matchWinner = matchWinner;
+    
+    StorageManager.saveToHistory(this.match);
+    StorageManager.clearCurrentMatch();
+    
+    // Show final frame score, then match winner
+    const finalFrameWinner = this.currentFrame.winner !== null ?
+      this.match.players[this.currentFrame.winner] : 'Draw';
+    
+    const message = `Frame ${this.currentFrame.number} complete!\n` +
+      `Final Score: ${this.currentFrame.scores[0]} - ${this.currentFrame.scores[1]}\n` +
+      `Winner: ${finalFrameWinner}\n\n` +
+      `MATCH COMPLETE!\n` +
+      `Final Match Score: ${framesWon[0]} - ${framesWon[1]}\n` +
+      `Match Winner: ${winnerName}`;
 
-    this.ui.showNotification(`Match complete! Winner: ${winner}`, 'success');
+    await this.ui.showAlert(message);
+    
+    // Navigate to stats page with winner highlighted
     this.handleViewStats();
   }
 
@@ -565,7 +587,15 @@ class SnookerApp {
   handleResumeMatch(matchId) {
     const match = StorageManager.loadMatchById(matchId);
     if (match) {
-      this.loadMatch(match);
+      // Check if match is completed
+      if (match.status === 'completed') {
+        // Load in read-only mode for viewing stats
+        this.match = match;
+        this.ui.showNotification('Viewing completed match', 'info');
+        this.handleViewStats();
+      } else {
+        this.loadMatch(match);
+      }
     } else {
       this.ui.showNotification('Failed to load match', 'error');
     }
@@ -594,8 +624,15 @@ class SnookerApp {
       return;
     }
 
-    // Check if current frame has ended - if so, start a new frame
+    // Check if current frame has ended - if so, check if we can start a new frame
     if (this.currentFrame.endTime) {
+      // Check if match is already complete (shouldn't start new frame)
+      if (DataModel.isMatchComplete(this.match)) {
+        this.ui.showNotification('Match is already complete. Viewing stats.', 'info');
+        this.handleViewStats();
+        return;
+      }
+      
       this.startNewFrame();
       StorageManager.saveCurrentMatch(this.match);
       this.ui.showView('match');

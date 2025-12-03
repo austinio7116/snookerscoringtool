@@ -720,6 +720,37 @@ body {
   border-radius: var(--radius-lg);
   margin-bottom: 30px;
   border: 2px solid var(--border-color);
+  position: relative;
+}
+
+.match-complete-banner {
+  color: #ffffff !important;
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-align: center;
+  padding: 20px;
+  margin: -30px -30px 30px -30px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  animation: bannerPulse 2s ease-in-out infinite;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.match-complete-banner.player1-color {
+  background: var(--ball-red);
+  color: #ffffff !important;
+}
+
+.match-complete-banner.player2-color {
+  background: var(--ball-yellow);
+  color: #ffffff !important;
+}
+
+@keyframes bannerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.9; }
 }
 
 .match-score-container {
@@ -734,6 +765,30 @@ body {
 .match-score-player {
   flex: 1;
   text-align: center;
+  position: relative;
+  transition: var(--transition);
+}
+
+.match-score-player.match-winner {
+  transform: scale(1.05);
+}
+
+.match-score-player.match-winner .match-score-frames {
+  color: var(--primary-gold);
+  text-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+}
+
+.winner-badge {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-gold);
+  margin-top: 10px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
 }
 
 .match-score-name {
@@ -1847,6 +1902,53 @@ body {
 .custom-dialog-footer .btn {
   min-width: 100px;
   padding: 10px 20px;
+}
+
+/* Confirm Dialog Styles (for showAlert) */
+.confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.confirm-dialog {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--primary-red);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  width: 90%;
+  max-width: 500px;
+  overflow: hidden;
+}
+
+.confirm-message {
+  padding: 30px 25px;
+  color: var(--text-main);
+  line-height: 1.8;
+  font-size: 1.1rem;
+  white-space: pre-line;
+}
+
+.confirm-buttons {
+  padding: 20px 25px;
+  background: var(--bg-dark);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.confirm-buttons .btn {
+  min-width: 120px;
+  padding: 12px 24px;
+  font-size: 1rem;
 }
 
 /* Notification Styles */
