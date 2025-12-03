@@ -158,14 +158,30 @@ class DataModel {
 
     if (ball === 'red') {
       frame.redsRemaining = Math.max(0, frame.redsRemaining - 1);
-    } else if (frame.redsRemaining === 0) {
-      // Remove color permanently when all reds are gone
-      const colorIndex = frame.colorsRemaining.indexOf(ball);
-      if (colorIndex !== -1) {
-        frame.colorsRemaining.splice(colorIndex, 1);
+    } else {
+      // Only remove colors permanently when all reds are gone AND we're in the clearance phase
+      // Check if this was potted after the last red was already cleared
+      if (frame.redsRemaining === 0) {
+        // Check if the previous shot was also a color (meaning we're in clearance)
+        let inClearance = true;
+        if (frame.currentBreak && frame.currentBreak.shots.length > 0) {
+          const lastShot = frame.currentBreak.shots[frame.currentBreak.shots.length - 1];
+          // If last shot was red, this color goes back on the table
+          if (lastShot.ball === 'red') {
+            inClearance = false;
+          }
+        }
+        
+        if (inClearance) {
+          // Remove color permanently during clearance phase
+          const colorIndex = frame.colorsRemaining.indexOf(ball);
+          if (colorIndex !== -1) {
+            frame.colorsRemaining.splice(colorIndex, 1);
+          }
+        }
       }
+      // If reds remain, colors return to table (no removal needed)
     }
-    // If reds remain, colors return to table (no removal needed)
   }
 
   static isFrameComplete(frame) {

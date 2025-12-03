@@ -266,205 +266,215 @@ class UIManager {
     const player2Stats = stats.player2Stats;
 
     this.elements.statsContent.innerHTML = `
-      <div class="stats-container">
-        <h2>Match Statistics</h2>
-        
-        <!-- Score Comparison -->
-        <div class="chart-container">
-          <div class="chart-title">Match Score</div>
-          <div class="comparison-chart">
-            <div class="comparison-player">
-              <div class="comparison-name">${match.players[0]}</div>
-              <div class="comparison-value">${stats.currentScore[0]}</div>
-              <div class="comparison-label">Frames Won</div>
+      <div class="stats-dashboard">
+        <!-- Match Overview Header -->
+        <div class="stats-header">
+          <div class="stats-score-card">
+            <div class="score-card-player">
+              <div class="score-card-name">${match.players[0]}</div>
+              <div class="score-card-frames">${stats.currentScore[0]}</div>
             </div>
-            <div class="comparison-player">
-              <div class="comparison-name">${match.players[1]}</div>
-              <div class="comparison-value">${stats.currentScore[1]}</div>
-              <div class="comparison-label">Frames Won</div>
+            <div class="score-card-divider">
+              <div class="score-card-vs">VS</div>
+              <div class="score-card-format">Best of ${match.bestOf}</div>
             </div>
-          </div>
-        </div>
-
-        <!-- Pot Percentage Comparison -->
-        <div class="chart-container">
-          <div class="chart-title">Pot Percentage Comparison</div>
-          <div class="bar-chart">
-            <div class="bar-item">
-              <div class="bar-label">${match.players[0]}</div>
-              <div class="bar-track">
-                <div class="bar-fill" style="width: ${player1Stats.potPercentage}%">
-                  <span class="bar-value">${player1Stats.potPercentage}%</span>
-                </div>
-              </div>
-            </div>
-            <div class="bar-item">
-              <div class="bar-label">${match.players[1]}</div>
-              <div class="bar-track">
-                <div class="bar-fill" style="width: ${player2Stats.potPercentage}%">
-                  <span class="bar-value">${player2Stats.potPercentage}%</span>
-                </div>
-              </div>
+            <div class="score-card-player">
+              <div class="score-card-name">${match.players[1]}</div>
+              <div class="score-card-frames">${stats.currentScore[1]}</div>
             </div>
           </div>
         </div>
 
-        <!-- High Break Comparison -->
-        <div class="chart-container">
-          <div class="chart-title">High Break</div>
-          <div class="comparison-chart">
-            <div class="comparison-player">
-              <div class="comparison-name">${match.players[0]}</div>
-              <div class="comparison-value">${player1Stats.highBreak}</div>
-              <div class="comparison-label">Points</div>
-            </div>
-            <div class="comparison-player">
-              <div class="comparison-name">${match.players[1]}</div>
-              <div class="comparison-value">${player2Stats.highBreak}</div>
-              <div class="comparison-label">Points</div>
-            </div>
-          </div>
+        <!-- Frame History Graph -->
+        ${this.renderFrameHistoryGraph(match.frames, match.players)}
+
+        <!-- Unified Statistics Table -->
+        <div class="unified-stats-table">
+          <h3>Match Statistics Comparison</h3>
+          <table class="stats-comparison-table">
+            <thead>
+              <tr>
+                <th class="stat-category">Statistic</th>
+                <th class="stat-player">${match.players[0]}</th>
+                <th class="stat-player">${match.players[1]}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="stat-label">Frames Won</td>
+                <td class="stat-value ${stats.currentScore[0] > stats.currentScore[1] ? 'stat-leader' : ''}">${stats.currentScore[0]}</td>
+                <td class="stat-value ${stats.currentScore[1] > stats.currentScore[0] ? 'stat-leader' : ''}">${stats.currentScore[1]}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Total Points</td>
+                <td class="stat-value ${player1Stats.totalPoints > player2Stats.totalPoints ? 'stat-leader' : ''}">${player1Stats.totalPoints}</td>
+                <td class="stat-value ${player2Stats.totalPoints > player1Stats.totalPoints ? 'stat-leader' : ''}">${player2Stats.totalPoints}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">High Break</td>
+                <td class="stat-value ${player1Stats.highBreak > player2Stats.highBreak ? 'stat-leader' : ''}">${player1Stats.highBreak}</td>
+                <td class="stat-value ${player2Stats.highBreak > player1Stats.highBreak ? 'stat-leader' : ''}">${player2Stats.highBreak}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Pot Success %</td>
+                <td class="stat-value ${parseFloat(player1Stats.potPercentage) > parseFloat(player2Stats.potPercentage) ? 'stat-leader' : ''}">${player1Stats.potPercentage}%</td>
+                <td class="stat-value ${parseFloat(player2Stats.potPercentage) > parseFloat(player1Stats.potPercentage) ? 'stat-leader' : ''}">${player2Stats.potPercentage}%</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Points per Visit</td>
+                <td class="stat-value ${parseFloat(player1Stats.pointsPerVisit) > parseFloat(player2Stats.pointsPerVisit) ? 'stat-leader' : ''}">${player1Stats.pointsPerVisit}</td>
+                <td class="stat-value ${parseFloat(player2Stats.pointsPerVisit) > parseFloat(player1Stats.pointsPerVisit) ? 'stat-leader' : ''}">${player2Stats.pointsPerVisit}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Breaks 50+</td>
+                <td class="stat-value ${player1Stats.breaks.over50 > player2Stats.breaks.over50 ? 'stat-leader' : ''}">${player1Stats.breaks.over50}</td>
+                <td class="stat-value ${player2Stats.breaks.over50 > player1Stats.breaks.over50 ? 'stat-leader' : ''}">${player2Stats.breaks.over50}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Century Breaks</td>
+                <td class="stat-value ${player1Stats.breaks.century > player2Stats.breaks.century ? 'stat-leader' : ''}">${player1Stats.breaks.century}</td>
+                <td class="stat-value ${player2Stats.breaks.century > player1Stats.breaks.century ? 'stat-leader' : ''}">${player2Stats.breaks.century}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Safety Success %</td>
+                <td class="stat-value ${parseFloat(player1Stats.safetySuccessRate) > parseFloat(player2Stats.safetySuccessRate) ? 'stat-leader' : ''}">${player1Stats.safetySuccessRate}%</td>
+                <td class="stat-value ${parseFloat(player2Stats.safetySuccessRate) > parseFloat(player1Stats.safetySuccessRate) ? 'stat-leader' : ''}">${player2Stats.safetySuccessRate}%</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Rest Pot %</td>
+                <td class="stat-value ${parseFloat(player1Stats.restPotPercentage) > parseFloat(player2Stats.restPotPercentage) ? 'stat-leader' : ''}">${player1Stats.restPotPercentage}%</td>
+                <td class="stat-value ${parseFloat(player2Stats.restPotPercentage) > parseFloat(player1Stats.restPotPercentage) ? 'stat-leader' : ''}">${player2Stats.restPotPercentage}%</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Fouls</td>
+                <td class="stat-value ${player1Stats.fouls < player2Stats.fouls ? 'stat-leader' : ''}">${player1Stats.fouls}</td>
+                <td class="stat-value ${player2Stats.fouls < player1Stats.fouls ? 'stat-leader' : ''}">${player2Stats.fouls}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Avg Shot Time</td>
+                <td class="stat-value">${player1Stats.averageShotTime}s</td>
+                <td class="stat-value">${player2Stats.averageShotTime}s</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <!-- Detailed Stats Grid -->
-        <div class="stats-grid">
-          <div class="player-stats">
-            <h3>${match.players[0]}</h3>
-            ${this.renderPlayerStats(player1Stats)}
-          </div>
-          
-          <div class="player-stats">
-            <h3>${match.players[1]}</h3>
-            ${this.renderPlayerStats(player2Stats)}
-          </div>
+        <!-- Break Building Details -->
+        <div class="break-building-section">
+          <h3>Break Building Distribution</h3>
+          <table class="stats-comparison-table">
+            <thead>
+              <tr>
+                <th class="stat-category">Break Range</th>
+                <th class="stat-player">${match.players[0]}</th>
+                <th class="stat-player">${match.players[1]}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="stat-label">20+</td>
+                <td class="stat-value">${player1Stats.breaks.over20}</td>
+                <td class="stat-value">${player2Stats.breaks.over20}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">30+</td>
+                <td class="stat-value">${player1Stats.breaks.over30}</td>
+                <td class="stat-value">${player2Stats.breaks.over30}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">40+</td>
+                <td class="stat-value">${player1Stats.breaks.over40}</td>
+                <td class="stat-value">${player2Stats.breaks.over40}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">50+</td>
+                <td class="stat-value">${player1Stats.breaks.over50}</td>
+                <td class="stat-value">${player2Stats.breaks.over50}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">60+</td>
+                <td class="stat-value">${player1Stats.breaks.over60}</td>
+                <td class="stat-value">${player2Stats.breaks.over60}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">70+</td>
+                <td class="stat-value">${player1Stats.breaks.over70}</td>
+                <td class="stat-value">${player2Stats.breaks.over70}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">80+</td>
+                <td class="stat-value">${player1Stats.breaks.over80}</td>
+                <td class="stat-value">${player2Stats.breaks.over80}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">90+</td>
+                <td class="stat-value">${player1Stats.breaks.over90}</td>
+                <td class="stat-value">${player2Stats.breaks.over90}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Century (100+)</td>
+                <td class="stat-value stat-highlight">${player1Stats.breaks.century}</td>
+                <td class="stat-value stat-highlight">${player2Stats.breaks.century}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <!-- Break Building Comparison Chart -->
-        <div class="chart-container">
-          <div class="chart-title">Break Building Comparison</div>
-          <div class="bar-chart">
-            ${this.renderBreakBuildingChart(player1Stats, player2Stats, match.players)}
-          </div>
-        </div>
-
+        <!-- Top Breaks List -->
         <div class="breaks-section">
-          <h3>All Breaks</h3>
+          <h3>Top Breaks</h3>
           ${this.renderBreaksList(stats.allBreaks, match.players)}
         </div>
-
-        <div class="frames-section">
-          <h3>Frame by Frame</h3>
-          ${this.renderFramesList(match.frames, match.players)}
-        </div>
       </div>
     `;
   }
 
-  renderBreakBuildingChart(player1Stats, player2Stats, players) {
-    const categories = [
-      { label: '20+', key: 'over20' },
-      { label: '30+', key: 'over30' },
-      { label: '40+', key: 'over40' },
-      { label: '50+', key: 'over50' },
-      { label: 'Century', key: 'century' }
-    ];
+  renderFrameHistoryGraph(frames, players) {
+    if (frames.length === 0) {
+      return '<div class="frame-history-empty"><p>No frames completed yet.</p></div>';
+    }
 
-    return categories.map(cat => {
-      const p1Value = player1Stats.breaks[cat.key];
-      const p2Value = player2Stats.breaks[cat.key];
-      const maxValue = Math.max(p1Value, p2Value, 1);
+    const completedFrames = frames.filter(f => f.winner !== null);
+    if (completedFrames.length === 0) {
+      return '<div class="frame-history-empty"><p>No frames completed yet.</p></div>';
+    }
 
-      return `
-        <div style="margin-bottom: 20px;">
-          <div style="font-weight: 600; color: var(--color-gray-200); margin-bottom: 10px;">${cat.label} Breaks</div>
-          <div class="bar-item">
-            <div class="bar-label">${players[0]}</div>
-            <div class="bar-track">
-              <div class="bar-fill" style="width: ${(p1Value / maxValue) * 100}%">
-                <span class="bar-value">${p1Value}</span>
-              </div>
-            </div>
-          </div>
-          <div class="bar-item">
-            <div class="bar-label">${players[1]}</div>
-            <div class="bar-track">
-              <div class="bar-fill" style="width: ${(p2Value / maxValue) * 100}%">
-                <span class="bar-value">${p2Value}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
+    const maxMargin = Math.max(...completedFrames.map(f => Math.abs(f.scores[0] - f.scores[1])), 1);
 
-  renderPlayerStats(stats) {
     return `
-      <div class="stat-item">
-        <span class="stat-label">Frames Won:</span>
-        <span class="stat-value">${stats.framesWon}</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Total Points:</span>
-        <span class="stat-value">${stats.totalPoints}</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">High Break:</span>
-        <span class="stat-value">${stats.highBreak}</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Pot %:</span>
-        <span class="stat-value">${stats.potPercentage}%</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Rest Pot %:</span>
-        <span class="stat-value">${stats.restPotPercentage}%</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Safety Success:</span>
-        <span class="stat-value">${stats.safetySuccessRate}%</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Escape Success:</span>
-        <span class="stat-value">${stats.escapeSuccessRate}%</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Avg Shot Time:</span>
-        <span class="stat-value">${stats.averageShotTime}s</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Points/Visit:</span>
-        <span class="stat-value">${stats.pointsPerVisit}</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Fouls:</span>
-        <span class="stat-value">${stats.fouls}</span>
-      </div>
-      <div class="breaks-distribution">
-        <h4>Break Building</h4>
-        <div class="stat-item">
-          <span class="stat-label">20+:</span>
-          <span class="stat-value">${stats.breaks.over20}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">30+:</span>
-          <span class="stat-value">${stats.breaks.over30}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">40+:</span>
-          <span class="stat-value">${stats.breaks.over40}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">50+:</span>
-          <span class="stat-value">${stats.breaks.over50}</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Century:</span>
-          <span class="stat-value">${stats.breaks.century}</span>
+      <div class="frame-history-section">
+        <h3>Frame History - Winning Margins</h3>
+        <div class="frame-history-graph">
+          <div class="frame-history-axis">
+            <div class="axis-label axis-label-left">${players[0]}</div>
+            <div class="axis-center"></div>
+            <div class="axis-label axis-label-right">${players[1]}</div>
+          </div>
+          ${completedFrames.map(frame => {
+            const margin = frame.scores[frame.winner] - frame.scores[frame.winner === 0 ? 1 : 0];
+            const percentage = (margin / maxMargin) * 100;
+            const isPlayer1Winner = frame.winner === 0;
+            
+            return `
+              <div class="frame-history-row">
+                <div class="frame-number">Frame ${frame.number}</div>
+                <div class="frame-bar-container">
+                  <div class="frame-bar-track">
+                    <div class="frame-bar ${isPlayer1Winner ? 'player1-bar' : 'player2-bar'}"
+                         style="${isPlayer1Winner ? 'left' : 'right'}: 50%; width: ${percentage / 2}%;">
+                      <span class="frame-bar-label">${frame.scores[0]} - ${frame.scores[1]}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="frame-winner">${players[frame.winner]}</div>
+              </div>
+            `;
+          }).join('')}
         </div>
       </div>
     `;
   }
+
 
   renderBreaksList(breaks, players) {
     // Filter to only show breaks of 10 or more
@@ -504,23 +514,6 @@ class UIManager {
     `;
   }
 
-  renderFramesList(frames, players) {
-    if (frames.length === 0) {
-      return '<p>No frames completed yet.</p>';
-    }
-
-    return `
-      <div class="frames-list">
-        ${frames.map(f => `
-          <div class="frame-item">
-            <span class="frame-number">Frame ${f.number}</span>
-            <span class="frame-score">${f.scores[0]} - ${f.scores[1]}</span>
-            <span class="frame-winner">${f.winner !== null ? players[f.winner] : 'In Progress'}</span>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  }
 
   renderHistory(history) {
     if (!this.elements.historyList) return;
