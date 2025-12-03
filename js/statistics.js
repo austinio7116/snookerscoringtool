@@ -67,12 +67,15 @@ class StatisticsEngine {
   }
 
   static processShotStatistics(shot, playerStats) {
-    playerStats.shots.total++;
-    
-    if (shot.potted) {
-      playerStats.shots.potted++;
-    } else {
-      playerStats.shots.missed++;
+    // Only count pot attempts (not safeties) in pot percentage statistics
+    if (!shot.isSafety) {
+      playerStats.shots.total++;
+      
+      if (shot.potted) {
+        playerStats.shots.potted++;
+      } else {
+        playerStats.shots.missed++;
+      }
     }
 
     // Rest shot statistics
