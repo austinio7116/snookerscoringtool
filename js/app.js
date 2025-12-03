@@ -89,10 +89,11 @@ class SnookerApp {
       undoShotBtn.addEventListener('click', () => this.handleUndoShot());
     }
 
-    const exportMatchBtn = document.getElementById('export-match-btn');
-    if (exportMatchBtn) {
-      exportMatchBtn.addEventListener('click', () => this.handleExportMatch());
-    }
+    // Export match buttons (there are two - one in match view, one in stats view)
+    const exportMatchBtns = document.querySelectorAll('#export-match-btn');
+    exportMatchBtns.forEach(btn => {
+      btn.addEventListener('click', () => this.handleExportMatch());
+    });
 
     // Timer callbacks
     this.timer.onTick((duration) => {
