@@ -11,6 +11,7 @@ class SnookerApp {
     this.shotAction = 'pot'; // Default action: pot, miss, safety, foul
     this.shotHistory = []; // Track shots for undo functionality
     this.playStarted = false; // Track if play has started
+    this.freeBallActive = false; // Track if free ball is active
   }
 
   init() {
@@ -162,6 +163,7 @@ class SnookerApp {
     this.updateDisplay();
     this.disableShotInputs();
     this.showStartPlayButton();
+    this.hidePauseButton();
   }
 
   startNewBreak() {
@@ -243,6 +245,7 @@ class SnookerApp {
 
   handleFoul(foulPoints) {
     const playAgain = document.getElementById('foul-play-again').checked;
+    const freeBall = document.getElementById('foul-free-ball').checked;
     this.hideFoulDialog();
 
     if (!this.selectedBall) {
@@ -262,8 +265,15 @@ class SnookerApp {
     // Pass the foul points to be awarded in processFoulShot
     this.processFoulShot(shot, playAgain, true, foulPoints);
     
-    // Reset the checkbox for next time
+    // Set free ball state if checkbox was checked
+    this.freeBallActive = freeBall;
+    
+    // Reset the checkboxes for next time
     document.getElementById('foul-play-again').checked = false;
+    document.getElementById('foul-free-ball').checked = false;
+    
+    // Update display to show free ball options if active
+    this.updateDisplay();
   }
 
   processFoulShot(shot, playAgain, saveState = true, foulPoints = 0) {
@@ -318,20 +328,36 @@ class SnookerApp {
       this.startNewBreak();
     }
 
+    // Handle free ball scoring - free ball counts as 1 point regardless of color
+    let pointsToAdd = shot.points;
+    if (shot.isFreeBall && potted) {
+      pointsToAdd = 1; // Free ball always counts as 1 point (like a red)
+      // Update the shot object to reflect 1 point for logging
+      shot.points = 1;
+    }
+
     this.currentFrame.currentBreak.shots.push(shot);
-    this.currentFrame.currentBreak.points += shot.points;
+    this.currentFrame.currentBreak.points += pointsToAdd;
 
     if (potted) {
       this.currentFrame.currentBreak.balls.push(this.selectedBall);
     }
 
     // Update frame score for potted balls
-    if (shot.points > 0 && potted) {
-      this.currentFrame.scores[this.currentFrame.activePlayer] += shot.points;
+    if (pointsToAdd > 0 && potted) {
+      this.currentFrame.scores[this.currentFrame.activePlayer] += pointsToAdd;
     }
 
     // Update table state
-    DataModel.updateTableState(this.currentFrame, this.selectedBall, potted);
+    // Free ball doesn't remove the color from table and doesn't decrease red count
+    // It's only treated as a red for sequencing purposes
+    if (shot.isFreeBall && potted) {
+      // Reset free ball state - no table state changes needed
+      this.freeBallActive = false;
+    } else if (!shot.isFreeBall) {
+      // Normal ball - update table state as usual
+      DataModel.updateTableState(this.currentFrame, this.selectedBall, potted);
+    }
 
     // Check if break should end
     if (!potted || shot.isFoul || shot.isSafety) {
@@ -435,16 +461,25 @@ class SnookerApp {
   }
 
   handleStartPlay() {
+    // Mark play as started if not already
     if (!this.playStarted) {
       this.playStarted = true;
-      this.timer.resumeFrame();
-      this.timer.startShot();
-      this.enableShotInputs();
-      this.hideStartPlayButton();
-      this.showPauseButton();
-      this.ui.showNotification('Play started!', 'success');
-      this.updateDisplay();
     }
+    
+    // Resume the timer
+    this.timer.resumeFrame();
+    this.timer.startShot();
+    
+    // Enable inputs and update UI
+    this.enableShotInputs();
+    this.hideStartPlayButton();
+    this.showPauseButton();
+    
+    // Show notification
+    const message = this.playStarted ? 'Play resumed' : 'Play started!';
+    this.ui.showNotification(message, 'success');
+    
+    this.updateDisplay();
   }
 
   handlePauseToggle() {
@@ -559,29 +594,34 @@ class SnookerApp {
       return;
     }
 
+    // Check if current frame has ended - if so, start a new frame
+    if (this.currentFrame.endTime) {
+      this.startNewFrame();
+      StorageManager.saveCurrentMatch(this.match);
+      this.ui.showView('match');
+      this.updateDisplay();
+      this.ui.showNotification('Match loaded - new frame started', 'success');
+      return;
+    }
+
     // Check if play was already started (if there are any shots recorded)
     const hasShots = this.currentFrame.breaks.some(b => b.shots.length > 0);
     this.playStarted = hasShots;
 
-    // Restore timer state if frame is in progress
-    if (!this.currentFrame.endTime) {
-      this.timer.startFrame();
-      if (this.currentFrame.isPaused || !this.playStarted) {
-        this.timer.pauseFrame();
-      }
-    }
+    // Start timer and pause it - user must explicitly resume
+    this.timer.startFrame();
+    this.timer.pauseFrame();
 
     // Update UI based on play state
     if (this.playStarted) {
-      this.hideStartPlayButton();
-      this.showPauseButton();
-      if (!this.timer.isPaused) {
-        this.enableShotInputs();
-      } else {
-        this.disableShotInputs();
-      }
-    } else {
+      // Match was in progress - show start button to resume and pause button hidden
       this.showStartPlayButton();
+      this.hidePauseButton();
+      this.disableShotInputs();
+    } else {
+      // Play hasn't started yet - show start button
+      this.showStartPlayButton();
+      this.hidePauseButton();
       this.disableShotInputs();
     }
 
@@ -636,8 +676,14 @@ class SnookerApp {
     this.ui.updateTableState(this.currentFrame);
     this.ui.updateTimer(this.timer.getFrameDuration(), this.timer.isPaused);
 
-    // Update available balls
-    const availableBalls = DataModel.getNextBall(this.currentFrame);
+    // Update available balls - if free ball is active, show all colors
+    let availableBalls;
+    if (this.freeBallActive) {
+      // Free ball: show all available colors (not red)
+      availableBalls = this.currentFrame.colorsRemaining;
+    } else {
+      availableBalls = DataModel.getNextBall(this.currentFrame);
+    }
     this.ui.renderBallSelector(availableBalls, (ball) => this.selectBall(ball));
   }
 
@@ -666,7 +712,8 @@ class SnookerApp {
           isSafety: false,
           isFoul: false,
           foulPoints: 0,
-          duration: this.timer.endShot()
+          duration: this.timer.endShot(),
+          isFreeBall: this.freeBallActive
         };
         
         const shot = DataModel.createShot(ball, true, attributes);
@@ -756,6 +803,13 @@ class SnookerApp {
     const pauseBtn = document.getElementById('pause-btn');
     if (pauseBtn) {
       pauseBtn.style.display = 'block';
+    }
+  }
+
+  hidePauseButton() {
+    const pauseBtn = document.getElementById('pause-btn');
+    if (pauseBtn) {
+      pauseBtn.style.display = 'none';
     }
   }
 }

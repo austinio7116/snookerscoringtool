@@ -51,8 +51,12 @@ class TimerManager {
   }
 
   resumeFrame() {
-    if (this.isPaused && this.pauseStartTime) {
-      this.pausedTime += Date.now() - this.pauseStartTime;
+    if (this.isPaused) {
+      // Add paused time if we have a pause start time
+      if (this.pauseStartTime) {
+        this.pausedTime += Date.now() - this.pauseStartTime;
+      }
+      
       this.isPaused = false;
       this.pauseStartTime = null;
       

@@ -70,7 +70,8 @@ class DataModel {
       isEscape: attributes.isEscape || false,
       isFoul: attributes.isFoul || false,
       foulPoints: attributes.foulPoints || 0,
-      duration: attributes.duration || 0
+      duration: attributes.duration || 0,
+      isFreeBall: attributes.isFreeBall || false
     };
   }
 
@@ -134,8 +135,9 @@ class DataModel {
       // If reds remain, next ball must be red
       if (frame.currentBreak && frame.currentBreak.shots.length > 0) {
         const lastShot = frame.currentBreak.shots[frame.currentBreak.shots.length - 1];
-        if (lastShot.ball === 'red' && lastShot.potted) {
-          // After potting red, can pot any color
+        // Check if last shot was a red OR a free ball used as red
+        if ((lastShot.ball === 'red' || lastShot.isFreeBall) && lastShot.potted) {
+          // After potting red (or free ball as red), can pot any color
           return frame.colorsRemaining;
         }
       }
@@ -144,8 +146,9 @@ class DataModel {
       // All reds gone - check if we just potted the last red
       if (frame.currentBreak && frame.currentBreak.shots.length > 0) {
         const lastShot = frame.currentBreak.shots[frame.currentBreak.shots.length - 1];
-        if (lastShot.ball === 'red' && lastShot.potted) {
-          // Just potted the last red, can pot any color
+        // Check if last shot was a red OR a free ball used as red
+        if ((lastShot.ball === 'red' || lastShot.isFreeBall) && lastShot.potted) {
+          // Just potted the last red (or free ball as red), can pot any color
           return frame.colorsRemaining;
         }
       }

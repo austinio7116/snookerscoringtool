@@ -267,9 +267,15 @@ class UIManager {
       black: 7
     };
 
-    const ballsHtml = breakData.balls.map(ball =>
-      `<span class="break-ball ball-${ball}">${ballValues[ball]}</span>`
-    ).join('');
+    // Build balls HTML, checking each shot to see if it was a free ball
+    const ballsHtml = breakData.shots
+      .filter(shot => shot.potted)
+      .map(shot => {
+        // If it was a free ball, display as 1 point regardless of actual ball color
+        const displayValue = shot.isFreeBall ? 1 : ballValues[shot.ball];
+        return `<span class="break-ball ball-${shot.ball}">${displayValue}</span>`;
+      })
+      .join('');
 
     this.elements.currentBreak.innerHTML = `
       <div class="break-info">
@@ -343,7 +349,7 @@ class UIManager {
             <div class="match-score-frames">${stats.currentScore[0]}</div>
           </div>
           <div class="match-score-divider">
-            <div class="match-score-label">FRAMES</div>
+            <div class="match-score-label">SCORE</div>
             ${isFrameActive ? `<div class="current-frame-score">${currentFrameScores}</div>` : ''}
           </div>
           <div class="match-score-player">
@@ -904,9 +910,15 @@ class UIManager {
     return `
       <div class="breaks-list">
         ${filteredBreaks.slice(0, 20).map(b => {
-          const ballsHtml = b.balls.map(ball =>
-            `<span class="break-ball ball-${ball}" style="display: inline-block; margin: 0 2px;">${ballValues[ball]}</span>`
-          ).join('');
+          // Use shots data to check for free balls
+          const ballsHtml = b.shots
+            .filter(shot => shot.potted)
+            .map(shot => {
+              // If it was a free ball, display as 1 point regardless of actual ball color
+              const displayValue = shot.isFreeBall ? 1 : ballValues[shot.ball];
+              return `<span class="break-ball ball-${shot.ball}" style="display: inline-block; margin: 0 2px;">${displayValue}</span>`;
+            })
+            .join('');
           
           const playerClass = b.player === 0 ? 'player1' : 'player2';
           

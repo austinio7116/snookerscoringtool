@@ -212,6 +212,7 @@ class StatisticsEngine {
             player: breakData.player,
             points: breakData.points,
             balls: breakData.balls,
+            shots: breakData.shots,  // Include shots array for free ball detection
             timestamp: breakData.startTime
           });
         }
