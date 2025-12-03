@@ -313,8 +313,9 @@ class SnookerApp {
     }
   }
 
-  handleEndBreak() {
-    if (this.ui.confirmAction('End current break and switch players?')) {
+  async handleEndBreak() {
+    const confirmed = await this.ui.confirmAction('End current break and switch players?');
+    if (confirmed) {
       this.switchPlayer();
       this.updateDisplay();
       this.saveMatch();
@@ -327,8 +328,9 @@ class SnookerApp {
     this.startNewBreak();
   }
 
-  handleEndFrame() {
-    if (!this.ui.confirmAction('End current frame?')) {
+  async handleEndFrame() {
+    const confirmed = await this.ui.confirmAction('End current frame?');
+    if (!confirmed) {
       return;
     }
 
@@ -359,8 +361,8 @@ class SnookerApp {
     }
   }
 
-  showFrameSummary() {
-    const winner = this.currentFrame.winner !== null ? 
+  async showFrameSummary() {
+    const winner = this.currentFrame.winner !== null ?
       this.match.players[this.currentFrame.winner] : 'Draw';
     
     const message = `Frame ${this.currentFrame.number} complete!\n` +
@@ -368,7 +370,8 @@ class SnookerApp {
       `Score: ${this.currentFrame.scores[0]} - ${this.currentFrame.scores[1]}\n\n` +
       `Start next frame?`;
 
-    if (this.ui.confirmAction(message)) {
+    const confirmed = await this.ui.confirmAction(message);
+    if (confirmed) {
       this.startNewFrame();
     }
   }
@@ -435,8 +438,9 @@ class SnookerApp {
     }
   }
 
-  handleDeleteMatch(matchId) {
-    if (this.ui.confirmAction('Delete this match from history?')) {
+  async handleDeleteMatch(matchId) {
+    const confirmed = await this.ui.confirmAction('Delete this match from history?');
+    if (confirmed) {
       if (StorageManager.deleteFromHistory(matchId)) {
         this.ui.showNotification('Match deleted', 'success');
         this.refreshHistory();

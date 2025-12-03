@@ -36,6 +36,7 @@ class StatisticsEngine {
         }
 
         // Break building counts
+        if (breakData.points >= 10) playerStats.breaks.over10++;
         if (breakData.points >= 20) playerStats.breaks.over20++;
         if (breakData.points >= 30) playerStats.breaks.over30++;
         if (breakData.points >= 40) playerStats.breaks.over40++;

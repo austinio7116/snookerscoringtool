@@ -88,6 +88,7 @@ class DataModel {
       highBreak: 0,
       breaks: {
         total: 0,
+        over10: 0,
         over20: 0,
         over30: 0,
         over40: 0,

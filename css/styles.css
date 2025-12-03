@@ -16,9 +16,9 @@
   --text-dark: #000000;
 
   /* --- Functional Colors --- */
-  --color-success: #10b981;   /* Green */
-  --color-danger: #e6002e;    /* Red */
-  --color-info: #3b82f6;      /* Blue */
+  --color-success: #388e3c;   /* Green */
+  --color-danger: #d32f2f;    /* Red */
+  --color-info: #1976d2;      /* Blue */
   --border-color: #333333;
 
   /* --- Ball Colors (Specific) --- */
@@ -675,6 +675,75 @@ body {
   letter-spacing: 1px;
 }
 
+/* Overall Match Score */
+.overall-match-score {
+  background: var(--bg-card);
+  padding: 30px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 30px;
+  border: 2px solid var(--border-color);
+}
+
+.match-score-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.match-score-player {
+  flex: 1;
+  text-align: center;
+}
+
+.match-score-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 15px;
+}
+
+.match-score-name.player1-color {
+  color: #d32f2f;
+}
+
+.match-score-name.player2-color {
+  color: #fbc02d;
+}
+
+.match-score-frames {
+  font-size: 4rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  line-height: 1;
+  color: var(--text-main);
+}
+
+.match-score-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.match-score-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+}
+
+.current-frame-score {
+  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
 /* Dashboard Stats Cards */
 .dashboard-stats {
   display: grid;
@@ -716,29 +785,44 @@ body {
 }
 
 .stat-card-values {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: flex-start;
 }
 
 .stat-value-item {
-  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value-item:last-child {
+  text-align: right;
+  align-items: flex-end;
 }
 
 .stat-value {
-  font-size: 2.5rem;
+  font-size: 1.8rem;
   font-weight: 800;
   line-height: 1;
   font-family: var(--font-mono);
   color: white;
   margin-bottom: 5px;
+  order: 2;
 }
 
 .stat-player-name {
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  line-height: 1.2;
+  min-height: 2.4em;
+  display: flex;
+  align-items: flex-end;
+  order: 1;
+  margin-bottom: 8px;
 }
 
 .stat-player-name.player1 { color: #d32f2f; }
@@ -757,7 +841,18 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
+}
+
+/* Player color classes for table headers */
+.player1-color {
+  color: #d32f2f;
+  font-weight: 700;
+}
+
+.player2-color {
+  color: #fbc02d;
+  font-weight: 700;
 }
 
 .frame-history-title {
@@ -786,6 +881,7 @@ body {
 .frame-history-table {
   width: 100%;
   border-collapse: collapse;
+  background: var(--bg-dark);
 }
 
 .frame-history-table thead {
@@ -793,27 +889,27 @@ body {
 }
 
 .frame-history-table th {
-  padding: 12px;
-  text-align: left;
+  padding: 12px 16px;
+  text-align: center;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: var(--text-muted);
+  color: var(--text-main);
   font-weight: 600;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 2px solid var(--border-color);
+  line-height: 1.6;
 }
 
-.frame-history-table th:first-child {
-  text-align: center;
-  width: 60px;
+.frame-history-table th.col-high-break {
+  width: 20%;
 }
 
-.frame-history-table th:nth-child(2) {
-  width: 150px;
+.frame-history-table th.col-points {
+  width: 20%;
 }
 
-.frame-history-table th:nth-child(3) {
-  width: 150px;
+.frame-history-table th.col-frame {
+  width: 20%;
 }
 
 .frame-history-table tbody tr {
@@ -826,58 +922,46 @@ body {
 }
 
 .frame-history-table td {
-  padding: 12px;
-  font-size: 0.9rem;
-}
-
-.frame-history-table td:first-child {
-  text-align: center;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.frame-winner-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.frame-winner-badge.player1 {
-  background: rgba(211, 47, 47, 0.2);
-  color: #d32f2f;
-  border: 1px solid rgba(211, 47, 47, 0.3);
-}
-
-.frame-winner-badge.player2 {
-  background: rgba(251, 192, 45, 0.2);
-  color: #fbc02d;
-  border: 1px solid rgba(251, 192, 45, 0.3);
-}
-
-.frame-score {
-  font-family: var(--font-mono);
-  font-weight: 700;
+  padding: 14px 16px;
   font-size: 1rem;
-  color: white;
-}
-
-.frame-score .winner-score {
-  color: var(--primary-gold);
-}
-
-.frame-breaks {
+  text-align: center;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  font-weight: 600;
 }
 
-.frame-breaks .high-break {
-  color: var(--primary-gold);
+.frame-history-table td.col-high-break {
+  color: var(--text-main);
+}
+
+.frame-history-table td.col-frame {
+  color: var(--text-main);
   font-weight: 700;
+}
+
+.frame-history-table td.col-points {
+  padding: 8px;
+}
+
+.frame-history-table .score-box {
+  display: inline-block;
+  padding: 8px 20px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-main);
+  background: transparent;
+  border-radius: 4px;
+  min-width: 50px;
+}
+
+.frame-history-table .score-box.winner-player1 {
+  background: #d32f2f;
+  color: var(--text-main);
+}
+
+.frame-history-table .score-box.winner-player2 {
+  background: #fbc02d;
+  color: var(--text-dark);
 }
 
 /* Match Analysis Section */
@@ -1047,6 +1131,14 @@ body {
   color: var(--primary-gold);
 }
 
+.stats-comparison-table th.stat-player:nth-child(2) {
+  color: #d32f2f;
+}
+
+.stats-comparison-table th.stat-player:nth-child(3) {
+  color: #fbc02d;
+}
+
 .stats-comparison-table tbody tr {
   border-bottom: 1px solid var(--border-color);
   transition: var(--transition);
@@ -1080,16 +1172,31 @@ body {
 }
 
 .stats-comparison-table td.stat-leader {
-  color: var(--primary-gold);
   position: relative;
+  font-weight: 800;
 }
 
 .stats-comparison-table td.stat-leader::before {
   content: '▲';
-  position: absolute;
-  left: 5px;
+  margin-right: 4px;
   font-size: 0.7rem;
-  color: var(--primary-gold);
+}
+
+/* Player-specific colors for stat leaders */
+.stats-comparison-table td.stat-value:nth-child(2).stat-leader {
+  color: #d32f2f;
+}
+
+.stats-comparison-table td.stat-value:nth-child(2).stat-leader::before {
+  color: #d32f2f;
+}
+
+.stats-comparison-table td.stat-value:nth-child(3).stat-leader {
+  color: #fbc02d;
+}
+
+.stats-comparison-table td.stat-value:nth-child(3).stat-leader::before {
+  color: #fbc02d;
 }
 
 .stats-comparison-table td.stat-highlight {
@@ -1128,6 +1235,14 @@ body {
   border-radius: var(--radius-sm);
   border-left: 3px solid var(--primary-gold);
   transition: var(--transition);
+}
+
+.break-item.player1 {
+  border-left-color: #d32f2f;
+}
+
+.break-item.player2 {
+  border-left-color: #fbc02d;
 }
 
 .break-item:hover {
@@ -1251,4 +1366,148 @@ body {
   .break-frame {
     text-align: left;
   }
+}
+
+/* --- Custom Dialog (replaces alerts/confirms) --- */
+.custom-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.custom-dialog.show {
+  opacity: 1;
+}
+
+.custom-dialog-content {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--primary-red);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  width: 90%;
+  max-width: 500px;
+  overflow: hidden;
+  transform: scale(0.9);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.custom-dialog.show .custom-dialog-content {
+  transform: scale(1);
+}
+
+.custom-dialog-header {
+  background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-card) 100%);
+  padding: 20px 25px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.custom-dialog-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--primary-gold);
+}
+
+.custom-dialog-body {
+  padding: 30px 25px;
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+.custom-dialog-body p {
+  margin: 0;
+  font-size: 1rem;
+  white-space: pre-line;
+}
+
+.custom-dialog-footer {
+  padding: 20px 25px;
+  background: var(--bg-dark);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.custom-dialog-footer .btn {
+  min-width: 100px;
+  padding: 10px 20px;
+}
+
+/* Notification Styles */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 15px 25px;
+  background-color: var(--bg-card);
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--primary-gold);
+  box-shadow: var(--shadow-lg);
+  z-index: 3000;
+  opacity: 0;
+  transform: translateX(400px);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  max-width: 400px;
+  font-weight: 600;
+}
+
+.notification.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.notification-success {
+  border-left-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.notification-error {
+  border-left-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.notification-info {
+  border-left-color: var(--color-info);
+  color: var(--color-info);
+}
+
+/* Foul Option Checkbox */
+.foul-option {
+  margin: 20px 0;
+  padding: 15px;
+  background: var(--bg-dark);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.foul-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.foul-checkbox-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary-red);
+}
+
+.foul-checkbox-label span {
+  user-select: none;
 }

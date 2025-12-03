@@ -112,22 +112,22 @@ class UIManager {
     const statsContent = this.elements.statsContent;
     if (!statsContent || !window.currentMatchData) return;
 
-    const { frames, players } = window.currentMatchData;
+    const { frames, players, bestOf } = window.currentMatchData;
     const completedFrames = frames.filter(f => f.winner !== null);
 
     // Render appropriate chart
     switch(chartType) {
       case 'scores':
-        chartCanvas.innerHTML = this.renderScoresChart(completedFrames, players);
+        chartCanvas.innerHTML = this.renderScoresChart(completedFrames, players, bestOf);
         break;
       case 'breaks':
-        chartCanvas.innerHTML = this.renderBreaksChart(completedFrames, players);
+        chartCanvas.innerHTML = this.renderBreaksChart(completedFrames, players, bestOf);
         break;
       case 'total-points':
-        chartCanvas.innerHTML = this.renderTotalPointsChart(completedFrames, players);
+        chartCanvas.innerHTML = this.renderTotalPointsChart(completedFrames, players, bestOf);
         break;
       case 'diff':
-        chartCanvas.innerHTML = this.renderDiffChart(completedFrames, players);
+        chartCanvas.innerHTML = this.renderDiffChart(completedFrames, players, bestOf);
         break;
     }
   }
@@ -309,13 +309,37 @@ class UIManager {
     // Store match data globally for chart switching
     window.currentMatchData = {
       frames: match.frames,
-      players: match.players
+      players: match.players,
+      bestOf: match.bestOf
     };
 
     const player1Stats = stats.player1Stats;
     const player2Stats = stats.player2Stats;
 
+    // Get current frame info if one is in progress
+    const currentFrame = match.frames[match.frames.length - 1];
+    const isFrameActive = currentFrame && currentFrame.winner === null;
+    const currentFrameScores = isFrameActive ? ` (${currentFrame.scores[0]} - ${currentFrame.scores[1]})` : '';
+
     this.elements.statsContent.innerHTML = `
+      <!-- Overall Match Score -->
+      <div class="overall-match-score">
+        <div class="match-score-container">
+          <div class="match-score-player">
+            <div class="match-score-name player1-color">${match.players[0]}</div>
+            <div class="match-score-frames">${stats.currentScore[0]}</div>
+          </div>
+          <div class="match-score-divider">
+            <div class="match-score-label">FRAMES</div>
+            ${isFrameActive ? `<div class="current-frame-score">${currentFrameScores}</div>` : ''}
+          </div>
+          <div class="match-score-player">
+            <div class="match-score-name player2-color">${match.players[1]}</div>
+            <div class="match-score-frames">${stats.currentScore[1]}</div>
+          </div>
+        </div>
+      </div>
+
       <div class="stats-dashboard">
         <!-- Dashboard Stats Cards -->
         <div class="dashboard-stats">
@@ -334,14 +358,14 @@ class UIManager {
           </div>
           
           <div class="stat-card border-blue">
-            <div class="stat-card-header">Avg Score / Frame</div>
+            <div class="stat-card-header">Pot Success</div>
             <div class="stat-card-values">
               <div class="stat-value-item">
-                <div class="stat-value">${this.calculateAvgScorePerFrame(player1Stats, stats.currentScore[0])}</div>
+                <div class="stat-value">${player1Stats.potPercentage}%</div>
                 <div class="stat-player-name player1">${match.players[0]}</div>
               </div>
               <div class="stat-value-item" style="text-align: right;">
-                <div class="stat-value">${this.calculateAvgScorePerFrame(player2Stats, stats.currentScore[1])}</div>
+                <div class="stat-value">${player2Stats.potPercentage}%</div>
                 <div class="stat-player-name player2">${match.players[1]}</div>
               </div>
             </div>
@@ -362,14 +386,14 @@ class UIManager {
           </div>
           
           <div class="stat-card border-red">
-            <div class="stat-card-header">Avg High Break</div>
+            <div class="stat-card-header">Avg Shot Time</div>
             <div class="stat-card-values">
               <div class="stat-value-item">
-                <div class="stat-value">${this.calculateAvgHighBreak(player1Stats)}</div>
+                <div class="stat-value">${player1Stats.averageShotTime}s</div>
                 <div class="stat-player-name player1">${match.players[0]}</div>
               </div>
               <div class="stat-value-item" style="text-align: right;">
-                <div class="stat-value">${this.calculateAvgHighBreak(player2Stats)}</div>
+                <div class="stat-value">${player2Stats.averageShotTime}s</div>
                 <div class="stat-player-name player2">${match.players[1]}</div>
               </div>
             </div>
@@ -410,14 +434,29 @@ class UIManager {
                 <td class="stat-value ${player2Stats.highBreak > player1Stats.highBreak ? 'stat-leader' : ''}">${player2Stats.highBreak}</td>
               </tr>
               <tr>
-                <td class="stat-label">Pot Success %</td>
-                <td class="stat-value ${parseFloat(player1Stats.potPercentage) > parseFloat(player2Stats.potPercentage) ? 'stat-leader' : ''}">${player1Stats.potPercentage}%</td>
-                <td class="stat-value ${parseFloat(player2Stats.potPercentage) > parseFloat(player1Stats.potPercentage) ? 'stat-leader' : ''}">${player2Stats.potPercentage}%</td>
-              </tr>
-              <tr>
                 <td class="stat-label">Points per Visit</td>
                 <td class="stat-value ${parseFloat(player1Stats.pointsPerVisit) > parseFloat(player2Stats.pointsPerVisit) ? 'stat-leader' : ''}">${player1Stats.pointsPerVisit}</td>
                 <td class="stat-value ${parseFloat(player2Stats.pointsPerVisit) > parseFloat(player1Stats.pointsPerVisit) ? 'stat-leader' : ''}">${player2Stats.pointsPerVisit}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Breaks 10+</td>
+                <td class="stat-value ${player1Stats.breaks.over10 > player2Stats.breaks.over10 ? 'stat-leader' : ''}">${player1Stats.breaks.over10}</td>
+                <td class="stat-value ${player2Stats.breaks.over10 > player1Stats.breaks.over10 ? 'stat-leader' : ''}">${player2Stats.breaks.over10}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Breaks 20+</td>
+                <td class="stat-value ${player1Stats.breaks.over20 > player2Stats.breaks.over20 ? 'stat-leader' : ''}">${player1Stats.breaks.over20}</td>
+                <td class="stat-value ${player2Stats.breaks.over20 > player1Stats.breaks.over20 ? 'stat-leader' : ''}">${player2Stats.breaks.over20}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Breaks 30+</td>
+                <td class="stat-value ${player1Stats.breaks.over30 > player2Stats.breaks.over30 ? 'stat-leader' : ''}">${player1Stats.breaks.over30}</td>
+                <td class="stat-value ${player2Stats.breaks.over30 > player1Stats.breaks.over30 ? 'stat-leader' : ''}">${player2Stats.breaks.over30}</td>
+              </tr>
+              <tr>
+                <td class="stat-label">Breaks 40+</td>
+                <td class="stat-value ${player1Stats.breaks.over40 > player2Stats.breaks.over40 ? 'stat-leader' : ''}">${player1Stats.breaks.over40}</td>
+                <td class="stat-value ${player2Stats.breaks.over40 > player1Stats.breaks.over40 ? 'stat-leader' : ''}">${player2Stats.breaks.over40}</td>
               </tr>
               <tr>
                 <td class="stat-label">Breaks 50+</td>
@@ -430,85 +469,9 @@ class UIManager {
                 <td class="stat-value ${player2Stats.breaks.century > player1Stats.breaks.century ? 'stat-leader' : ''}">${player2Stats.breaks.century}</td>
               </tr>
               <tr>
-                <td class="stat-label">Safety Success %</td>
-                <td class="stat-value ${parseFloat(player1Stats.safetySuccessRate) > parseFloat(player2Stats.safetySuccessRate) ? 'stat-leader' : ''}">${player1Stats.safetySuccessRate}%</td>
-                <td class="stat-value ${parseFloat(player2Stats.safetySuccessRate) > parseFloat(player1Stats.safetySuccessRate) ? 'stat-leader' : ''}">${player2Stats.safetySuccessRate}%</td>
-              </tr>
-              <tr>
-                <td class="stat-label">Rest Pot %</td>
-                <td class="stat-value ${parseFloat(player1Stats.restPotPercentage) > parseFloat(player2Stats.restPotPercentage) ? 'stat-leader' : ''}">${player1Stats.restPotPercentage}%</td>
-                <td class="stat-value ${parseFloat(player2Stats.restPotPercentage) > parseFloat(player1Stats.restPotPercentage) ? 'stat-leader' : ''}">${player2Stats.restPotPercentage}%</td>
-              </tr>
-              <tr>
                 <td class="stat-label">Fouls</td>
                 <td class="stat-value ${player1Stats.fouls < player2Stats.fouls ? 'stat-leader' : ''}">${player1Stats.fouls}</td>
                 <td class="stat-value ${player2Stats.fouls < player1Stats.fouls ? 'stat-leader' : ''}">${player2Stats.fouls}</td>
-              </tr>
-              <tr>
-                <td class="stat-label">Avg Shot Time</td>
-                <td class="stat-value">${player1Stats.averageShotTime}s</td>
-                <td class="stat-value">${player2Stats.averageShotTime}s</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Break Building Details -->
-        <div class="break-building-section">
-          <h3>Break Building Distribution</h3>
-          <table class="stats-comparison-table">
-            <thead>
-              <tr>
-                <th class="stat-category">Break Range</th>
-                <th class="stat-player">${match.players[0]}</th>
-                <th class="stat-player">${match.players[1]}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="stat-label">20+</td>
-                <td class="stat-value">${player1Stats.breaks.over20}</td>
-                <td class="stat-value">${player2Stats.breaks.over20}</td>
-              </tr>
-              <tr>
-                <td class="stat-label">30+</td>
-                <td class="stat-value">${player1Stats.breaks.over30}</td>
-                <td class="stat-value">${player2Stats.breaks.over30}</td>
-              </tr>
-              <tr>
-                <td class="stat-label">40+</td>
-                <td class="stat-value">${player1Stats.breaks.over40}</td>
-                <td class="stat-value">${player2Stats.breaks.over40}</td>
-              </tr>
-              <tr>
-                <td class="stat-label">50+</td>
-                <td class="stat-value">${player1Stats.breaks.over50}</td>
-                <td class="stat-value">${player2Stats.breaks.over50}</td>
-              </tr>
-              <tr>
-                <td class="stat-label">60+</td>
-                <td class="stat-value">${player1Stats.breaks.over60}</td>
-                <td class="stat-value">${player2Stats.breaks.over60}</td>
-              </tr>
-              <tr>
-                <td class="stat-label">70+</td>
-                <td class="stat-value">${player1Stats.breaks.over70}</td>
-                <td class="stat-value">${player2Stats.breaks.over70}</td>
-              </tr>
-              <tr>
-                <td class="stat-label">80+</td>
-                <td class="stat-value">${player1Stats.breaks.over80}</td>
-                <td class="stat-value">${player2Stats.breaks.over80}</td>
-              </tr>
-              <tr>
-                <td class="stat-label">90+</td>
-                <td class="stat-value">${player1Stats.breaks.over90}</td>
-                <td class="stat-value">${player2Stats.breaks.over90}</td>
-              </tr>
-              <tr>
-                <td class="stat-label">Century (100+)</td>
-                <td class="stat-value stat-highlight">${player1Stats.breaks.century}</td>
-                <td class="stat-value stat-highlight">${player2Stats.breaks.century}</td>
               </tr>
             </tbody>
           </table>
@@ -523,9 +486,9 @@ class UIManager {
     `;
   }
 
-  calculateAvgScorePerFrame(playerStats, framesWon) {
-    if (framesWon === 0) return '0.0';
-    return (playerStats.totalPoints / framesWon).toFixed(1);
+  calculateAvgScorePerFrame(playerStats, framesPlayed) {
+    if (framesPlayed === 0) return '0.0';
+    return (playerStats.totalPoints / framesPlayed).toFixed(1);
   }
 
   calculateAvgHighBreak(playerStats) {
@@ -577,58 +540,49 @@ class UIManager {
         <table class="frame-history-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Winner</th>
-              <th>Score</th>
-              <th>Break</th>
+              <th class="col-high-break">High Break</th>
+              <th class="col-points"><span class="player1-color">${players[0]}</span><br>Points</th>
+              <th class="col-frame">Frame</th>
+              <th class="col-points"><span class="player2-color">${players[1]}</span><br>Points</th>
+              <th class="col-high-break">High Break</th>
             </tr>
           </thead>
           <tbody>
             ${completedFrames.map(frame => {
-              const highBreak = Math.max(...frame.breaks.map(b => b.points), 0);
               const player1Break = Math.max(...frame.breaks.filter(b => b.player === 0).map(b => b.points), 0);
               const player2Break = Math.max(...frame.breaks.filter(b => b.player === 1).map(b => b.points), 0);
               
-            return `
-                    <tr>
-                      <td>#${frame.number}</td>
-                      <td>
-                        <span class="frame-winner-badge ${frame.winner === 0 ? 'player1' : 'player2'}">
-                          ${players[frame.winner]}
-                        </span>
-                      </td>
-                      <td>
-                        <span class="frame-score">
-                          <span class="${frame.winner === 0 ? 'winner-score' : ''}">${frame.scores[0]}</span>
-                          -
-                          <span class="${frame.winner === 1 ? 'winner-score' : ''}">${frame.scores[1]}</span>
-                        </span>
-                      </td>
-                      <td>
-                        <span class="frame-breaks">
-                          ${player1Break > 0 ? `<span class="${player1Break === highBreak ? 'high-break' : ''}">${player1Break}</span>` : '0'}
-                          /
-                          ${player2Break > 0 ? `<span class="${player2Break === highBreak ? 'high-break' : ''}">${player2Break}</span>` : '0'}
-                        </span>
-                      </td>
-                    </tr>
-                  `;
-                }).join('')}
+              return `
+                <tr>
+                  <td class="col-high-break">${player1Break > 0 ? player1Break : '-'}</td>
+                  <td class="col-points">
+                    <span class="score-box ${frame.winner === 0 ? 'winner-player1' : ''}">${frame.scores[0]}</span>
+                  </td>
+                  <td class="col-frame">${frame.number}</td>
+                  <td class="col-points">
+                    <span class="score-box ${frame.winner === 1 ? 'winner-player2' : ''}">${frame.scores[1]}</span>
+                  </td>
+                  <td class="col-high-break">${player2Break > 0 ? player2Break : '-'}</td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
         </table>
       </div>
     `;
   } // <--- THIS CLOSING BRACE WAS LIKELY MISSING OR MISPLACED
 
-  renderBreaksChart(frames, players) {
+  renderBreaksChart(frames, players, bestOf) {
     const maxBreak = Math.max(...frames.flatMap(f =>
       f.breaks.map(b => b.points)
     ), 1);
     const chartHeight = 240;
-    const chartWidth = 100;
+    const chartWidth = 500;  // Increased from 100 to fill more width
     const padding = 40;
     
-    const divisor = frames.length > 1 ? frames.length - 1 : 1;
+    // Use bestOf to determine total frames for x-axis scaling
+    const totalFrames = bestOf;
+    const divisor = totalFrames > 1 ? totalFrames - 1 : 1;
     
     const player1Breaks = frames.map(f =>
       Math.max(...f.breaks.filter(b => b.player === 0).map(b => b.points), 0)
@@ -638,12 +592,12 @@ class UIManager {
     );
     
     const points1 = player1Breaks.map((val, i) => ({
-      x: (i / divisor) * chartWidth,
+      x: 50 + (i / divisor) * chartWidth,  // Add left padding
       y: chartHeight - ((val / maxBreak) * (chartHeight - padding))
     }));
     
     const points2 = player2Breaks.map((val, i) => ({
-      x: (i / divisor) * chartWidth,
+      x: 50 + (i / divisor) * chartWidth,  // Add left padding
       y: chartHeight - ((val / maxBreak) * (chartHeight - padding))
     }));
 
@@ -658,37 +612,39 @@ class UIManager {
     const path2 = createPath(points2);
 
     const gridLines = [0, 25, 50, 75, 100].map(y =>
-      `<line x1="0" y1="${y * 2.4}" x2="100" y2="${y * 2.4}" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" vector-effect="non-scaling-stroke"/>`
+      `<line x1="50" y1="${y * 2.4}" x2="${50 + chartWidth}" y2="${y * 2.4}" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" vector-effect="non-scaling-stroke"/>`
     ).join('');
     
     const yLabels = [0, 25, 50, 75, 100].map((val, i) =>
-      `<text x="-2" y="${240 - (i * 60) + 4}" fill="#666" font-size="10" text-anchor="end">${Math.round((val / 100) * maxBreak)}</text>`
+      `<text x="45" y="${240 - (i * 60) + 4}" fill="#666" font-size="10" text-anchor="end">${Math.round((val / 100) * maxBreak)}</text>`
     ).join('');
     
     const circles1 = points1.map(p =>
-      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#e6002e" stroke="#121212" stroke-width="1"/>`
+      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#d32f2f" stroke="#121212" stroke-width="1"/>`
     ).join('');
     
     const circles2 = points2.map(p =>
-      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#ffcc00" stroke="#121212" stroke-width="1"/>`
+      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#fbc02d" stroke="#121212" stroke-width="1"/>`
     ).join('');
     
-    const xLabels = frames.map((f, i) =>
-      `<text x="${(i / divisor) * 100}" y="260" fill="#666" font-size="10" text-anchor="middle">${i + 1}</text>`
-    ).join('');
+    // Generate x-axis labels for all frames (1 to totalFrames)
+    const xLabels = Array.from({ length: totalFrames }, (_, i) => {
+      const frameNum = i + 1;
+      return `<text x="${50 + (i / divisor) * chartWidth}" y="260" fill="#666" font-size="10" text-anchor="middle">${frameNum}</text>`;
+    }).join('');
 
-    return `<svg viewBox="-10 -10 120 280" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 280px; overflow: visible;">
+    return `<svg viewBox="0 -10 600 280" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 280px; overflow: visible;">
       ${gridLines}
       ${yLabels}
-      <path d="${path2}" fill="none" stroke="#ffcc00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-      <path d="${path1}" fill="none" stroke="#e6002e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <path d="${path2}" fill="none" stroke="#fbc02d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <path d="${path1}" fill="none" stroke="#d32f2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
       ${circles1}
       ${circles2}
       ${xLabels}
     </svg>`;
   }
 
-  renderTotalPointsChart(frames, players) {
+  renderTotalPointsChart(frames, players, bestOf) {
     let cumulative1 = 0;
     let cumulative2 = 0;
     
@@ -704,18 +660,20 @@ class UIManager {
     
     const maxTotal = Math.max(...cumulativeScores1, ...cumulativeScores2);
     const chartHeight = 240;
-    const chartWidth = 100;
+    const chartWidth = 500;  // Increased from 100 to fill more width
     const padding = 40;
     
-    const divisor = frames.length > 1 ? frames.length - 1 : 1;
+    // Use bestOf to determine total frames for x-axis scaling
+    const totalFrames = bestOf;
+    const divisor = totalFrames > 1 ? totalFrames - 1 : 1;
     
     const points1 = cumulativeScores1.map((val, i) => ({
-      x: (i / divisor) * chartWidth,
+      x: 50 + (i / divisor) * chartWidth,  // Add left padding
       y: chartHeight - ((val / maxTotal) * (chartHeight - padding))
     }));
     
     const points2 = cumulativeScores2.map((val, i) => ({
-      x: (i / divisor) * chartWidth,
+      x: 50 + (i / divisor) * chartWidth,  // Add left padding
       y: chartHeight - ((val / maxTotal) * (chartHeight - padding))
     }));
 
@@ -730,72 +688,78 @@ class UIManager {
     const path2 = createPath(points2);
 
     const gridLines = [0, 25, 50, 75, 100].map(y =>
-      `<line x1="0" y1="${y * 2.4}" x2="100" y2="${y * 2.4}" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" vector-effect="non-scaling-stroke"/>`
+      `<line x1="50" y1="${y * 2.4}" x2="${50 + chartWidth}" y2="${y * 2.4}" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" vector-effect="non-scaling-stroke"/>`
     ).join('');
     
     const yLabels = [0, 25, 50, 75, 100].map((val, i) =>
-      `<text x="-2" y="${240 - (i * 60) + 4}" fill="#666" font-size="10" text-anchor="end">${Math.round((val / 100) * maxTotal)}</text>`
+      `<text x="45" y="${240 - (i * 60) + 4}" fill="#666" font-size="10" text-anchor="end">${Math.round((val / 100) * maxTotal)}</text>`
     ).join('');
     
     const circles1 = points1.map(p =>
-      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#e6002e" stroke="#121212" stroke-width="1"/>`
+      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#d32f2f" stroke="#121212" stroke-width="1"/>`
     ).join('');
     
     const circles2 = points2.map(p =>
-      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#ffcc00" stroke="#121212" stroke-width="1"/>`
+      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#fbc02d" stroke="#121212" stroke-width="1"/>`
     ).join('');
     
-    const xLabels = frames.map((f, i) =>
-      `<text x="${(i / divisor) * 100}" y="260" fill="#666" font-size="10" text-anchor="middle">${i + 1}</text>`
-    ).join('');
+    // Generate x-axis labels for all frames (1 to totalFrames)
+    const xLabels = Array.from({ length: totalFrames }, (_, i) => {
+      const frameNum = i + 1;
+      return `<text x="${50 + (i / divisor) * chartWidth}" y="260" fill="#666" font-size="10" text-anchor="middle">${frameNum}</text>`;
+    }).join('');
 
-    return `<svg viewBox="-10 -10 120 280" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 280px; overflow: visible;">
+    return `<svg viewBox="0 -10 600 280" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 280px; overflow: visible;">
       ${gridLines}
       ${yLabels}
-      <path d="${path2}" fill="none" stroke="#ffcc00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-      <path d="${path1}" fill="none" stroke="#e6002e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <path d="${path2}" fill="none" stroke="#fbc02d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <path d="${path1}" fill="none" stroke="#d32f2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
       ${circles1}
       ${circles2}
       ${xLabels}
     </svg>`;
   }
 
-  renderDiffChart(frames, players) {
+  renderDiffChart(frames, players, bestOf) {
     const diffs = frames.map(f => f.scores[0] - f.scores[1]);
     const maxDiff = Math.max(...diffs.map(Math.abs), 1);
     const chartHeight = 240;
-    const chartWidth = 100;
-    const barWidth = 80 / frames.length;
+    const chartWidth = 500;  // Increased from 100 to fill more width
+    // Use bestOf to determine total frames for bar width calculation
+    const totalFrames = bestOf;
+    const barWidth = (chartWidth * 0.8) / totalFrames;  // Use 80% of chart width for bars
     const centerY = chartHeight / 2;
     
-    const centerLine = `<line x1="0" y1="${centerY}" x2="100" y2="${centerY}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>`;
+    const centerLine = `<line x1="50" y1="${centerY}" x2="${50 + chartWidth}" y2="${centerY}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>`;
     
     const gridLines = [-100, -50, 50, 100].map(val => {
       const y = centerY - ((val / 100) * (centerY - 20));
-      return `<line x1="0" y1="${y}" x2="100" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>`;
+      return `<line x1="50" y1="${y}" x2="${50 + chartWidth}" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/>`;
     }).join('');
     
     const yLabels = [-100, -50, 0, 50, 100].map(val => {
       const y = centerY - ((val / 100) * (centerY - 20));
-      return `<text x="-2" y="${y + 3}" fill="#666" font-size="10" text-anchor="end">${Math.round((val / 100) * maxDiff)}</text>`;
+      return `<text x="45" y="${y + 3}" fill="#666" font-size="10" text-anchor="end">${Math.round((val / 100) * maxDiff)}</text>`;
     }).join('');
     
     const bars = frames.map((f, i) => {
       const diff = f.scores[0] - f.scores[1];
       const barHeight = Math.abs((diff / maxDiff) * (centerY - 20));
-      const x = (i / frames.length) * 100 + (barWidth / 2);
+      const x = 50 + (i / totalFrames) * chartWidth + (barWidth / 2);
       const isPositive = diff >= 0;
       const y = isPositive ? centerY - barHeight : centerY;
-      const color = isPositive ? '#e6002e' : '#ffcc00';
+      const color = isPositive ? '#d32f2f' : '#fbc02d';
       
       return `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" fill="${color}" rx="1"/>`;
     }).join('');
     
-    const xLabels = frames.map((f, i) =>
-      `<text x="${(i / frames.length) * 100 + barWidth}" y="260" fill="#666" font-size="10" text-anchor="middle">${i + 1}</text>`
-    ).join('');
+    // Generate x-axis labels for all frames (1 to totalFrames)
+    const xLabels = Array.from({ length: totalFrames }, (_, i) => {
+      const frameNum = i + 1;
+      return `<text x="${50 + (i / totalFrames) * chartWidth + barWidth}" y="260" fill="#666" font-size="10" text-anchor="middle">${frameNum}</text>`;
+    }).join('');
 
-    return `<svg viewBox="-10 -10 120 280" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 280px; overflow: visible;">
+    return `<svg viewBox="0 -10 600 280" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 280px; overflow: visible;">
       ${centerLine}
       ${gridLines}
       ${yLabels}
@@ -826,7 +790,7 @@ class UIManager {
       '</div>' +
       '<div class="chart-container">' +
         '<div class="chart-canvas" id="analysis-chart">' +
-          this.renderScoresChart(completedFrames, players) +
+          this.renderScoresChart(completedFrames, players, frames.length > 0 ? window.currentMatchData.bestOf : 1) +
         '</div>' +
         '<div class="chart-legend">' +
           '<div class="legend-item">' +
@@ -842,21 +806,23 @@ class UIManager {
     '</div>';
   }
 
-  renderScoresChart(frames, players) {
+  renderScoresChart(frames, players, bestOf) {
     const maxScore = Math.max(...frames.flatMap(f => f.scores));
     const chartHeight = 240;
-    const chartWidth = 100;
+    const chartWidth = 500;  // Increased from 100 to fill more width
     const padding = 40;
     
-    const divisor = frames.length > 1 ? frames.length - 1 : 1;
+    // Use bestOf to determine total frames for x-axis scaling
+    const totalFrames = bestOf;
+    const divisor = totalFrames > 1 ? totalFrames - 1 : 1;
     
     const points1 = frames.map((f, i) => ({
-      x: (i / divisor) * chartWidth,
+      x: 50 + (i / divisor) * chartWidth,  // Add left padding
       y: chartHeight - ((f.scores[0] / maxScore) * (chartHeight - padding))
     }));
     
     const points2 = frames.map((f, i) => ({
-      x: (i / divisor) * chartWidth,
+      x: 50 + (i / divisor) * chartWidth,  // Add left padding
       y: chartHeight - ((f.scores[1] / maxScore) * (chartHeight - padding))
     }));
 
@@ -871,30 +837,32 @@ class UIManager {
     const path2 = createPath(points2);
 
     const gridLines = [0, 25, 50, 75, 100].map(y =>
-      `<line x1="0" y1="${y * 2.4}" x2="100" y2="${y * 2.4}" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" vector-effect="non-scaling-stroke"/>`
+      `<line x1="50" y1="${y * 2.4}" x2="${50 + chartWidth}" y2="${y * 2.4}" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" vector-effect="non-scaling-stroke"/>`
     ).join('');
     
     const yLabels = [0, 25, 50, 75, 100].map((val, i) =>
-      `<text x="-2" y="${240 - (i * 60) + 4}" fill="#666" font-size="10" text-anchor="end">${Math.round((val / 100) * maxScore)}</text>`
+      `<text x="45" y="${240 - (i * 60) + 4}" fill="#666" font-size="10" text-anchor="end">${Math.round((val / 100) * maxScore)}</text>`
     ).join('');
     
     const circles1 = points1.map(p =>
-      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#e6002e" stroke="#121212" stroke-width="1"/>`
+      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#d32f2f" stroke="#121212" stroke-width="1"/>`
     ).join('');
     
     const circles2 = points2.map(p =>
-      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#ffcc00" stroke="#121212" stroke-width="1"/>`
+      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#fbc02d" stroke="#121212" stroke-width="1"/>`
     ).join('');
     
-    const xLabels = frames.map((f, i) =>
-      `<text x="${(i / divisor) * 100}" y="260" fill="#666" font-size="10" text-anchor="middle">${i + 1}</text>`
-    ).join('');
+    // Generate x-axis labels for all frames (1 to totalFrames)
+    const xLabels = Array.from({ length: totalFrames }, (_, i) => {
+      const frameNum = i + 1;
+      return `<text x="${50 + (i / divisor) * chartWidth}" y="260" fill="#666" font-size="10" text-anchor="middle">${frameNum}</text>`;
+    }).join('');
 
-    return `<svg viewBox="-10 -10 120 280" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 280px; overflow: visible;">
+    return `<svg viewBox="0 -10 600 280" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 280px; overflow: visible;">
       ${gridLines}
       ${yLabels}
-      <path d="${path2}" fill="none" stroke="#ffcc00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-      <path d="${path1}" fill="none" stroke="#e6002e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <path d="${path2}" fill="none" stroke="#fbc02d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+      <path d="${path1}" fill="none" stroke="#d32f2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
       ${circles1}
       ${circles2}
       ${xLabels}
@@ -927,8 +895,10 @@ class UIManager {
             `<span class="break-ball ball-${ball}" style="display: inline-block; margin: 0 2px;">${ballValues[ball]}</span>`
           ).join('');
           
+          const playerClass = b.player === 0 ? 'player1' : 'player2';
+          
           return `
-            <div class="break-item">
+            <div class="break-item ${playerClass}">
               <span class="break-player">${players[b.player]}</span>
               <span class="break-points">${b.points}</span>
               <span class="break-frame">Frame ${b.frameNumber}</span>
@@ -991,7 +961,90 @@ class UIManager {
   }
 
   confirmAction(message) {
-    return confirm(message);
+    return new Promise((resolve) => {
+      this.showConfirmDialog(message, resolve);
+    });
+  }
+
+  showConfirmDialog(message, callback) {
+    const dialog = document.createElement('div');
+    dialog.className = 'custom-dialog';
+    dialog.innerHTML = `
+      <div class="custom-dialog-content">
+        <div class="custom-dialog-header">
+          <h3>Confirm Action</h3>
+        </div>
+        <div class="custom-dialog-body">
+          <p>${message.replace(/\n/g, '<br>')}</p>
+        </div>
+        <div class="custom-dialog-footer">
+          <button class="btn btn-secondary dialog-cancel">Cancel</button>
+          <button class="btn btn-primary dialog-confirm">Confirm</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(dialog);
+    
+    // Trigger animation
+    setTimeout(() => dialog.classList.add('show'), 10);
+    
+    const handleResponse = (result) => {
+      dialog.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(dialog);
+        callback(result);
+      }, 300);
+    };
+    
+    dialog.querySelector('.dialog-cancel').addEventListener('click', () => handleResponse(false));
+    dialog.querySelector('.dialog-confirm').addEventListener('click', () => handleResponse(true));
+    
+    // Close on backdrop click
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        handleResponse(false);
+      }
+    });
+  }
+
+  showAlertDialog(message) {
+    const dialog = document.createElement('div');
+    dialog.className = 'custom-dialog';
+    dialog.innerHTML = `
+      <div class="custom-dialog-content">
+        <div class="custom-dialog-header">
+          <h3>Notice</h3>
+        </div>
+        <div class="custom-dialog-body">
+          <p>${message.replace(/\n/g, '<br>')}</p>
+        </div>
+        <div class="custom-dialog-footer">
+          <button class="btn btn-primary dialog-ok">OK</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(dialog);
+    
+    // Trigger animation
+    setTimeout(() => dialog.classList.add('show'), 10);
+    
+    const handleClose = () => {
+      dialog.classList.remove('show');
+      setTimeout(() => {
+        document.body.removeChild(dialog);
+      }, 300);
+    };
+    
+    dialog.querySelector('.dialog-ok').addEventListener('click', handleClose);
+    
+    // Close on backdrop click
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        handleClose();
+      }
+    });
   }
 }
 
