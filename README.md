@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # 🎱 Snooker Scorer
 
 A comprehensive static HTML/JavaScript application for tracking snooker matches in detail. Record every shot, break, and statistic with a professional interface designed for serious snooker enthusiasts.
@@ -209,4 +208,3 @@ For issues or questions, please refer to the code comments or create an issue in
 **Enjoy tracking your snooker matches! 🎱**
 =======
 # snookerscores
->>>>>>> 15634bed5aeba560e7299c7dccabb916c1b6299f
