@@ -213,7 +213,7 @@ class UIManager {
     });
   }
 
-  renderBallSelector(availableBalls, onBallSelect) {
+  renderBallSelector(availableBalls, onBallSelect, redsRemaining = 15) {
     if (!this.elements.ballSelector) return;
 
     this.elements.ballSelector.innerHTML = '';
@@ -233,9 +233,25 @@ class UIManager {
       button.className = `ball-btn ball-${ball}`;
       button.textContent = ballValues[ball];
       button.dataset.ball = ball;
-      button.onclick = () => onBallSelect(ball);
+      button.onclick = () => onBallSelect(ball, 1);
       this.elements.ballSelector.appendChild(button);
     });
+
+    // Add multiple red buttons if red is available and there are enough reds
+    if (availableBalls.includes('red')) {
+      // Add buttons for 2, 3, and 4 reds, but only if enough reds remain
+      [2, 3, 4].forEach(count => {
+        if (redsRemaining >= count) {
+          const button = document.createElement('button');
+          button.className = 'ball-btn ball-red multi-red';
+          button.textContent = `${count}R`;
+          button.dataset.ball = 'red';
+          button.dataset.count = count;
+          button.onclick = () => onBallSelect('red', count);
+          this.elements.ballSelector.appendChild(button);
+        }
+      });
+    }
   }
 
   updateMatchDisplay(match, currentFrame) {
@@ -333,12 +349,20 @@ class UIManager {
       black: 7
     };
 
-    // Build balls HTML, checking each shot to see if it was a free ball
+    // Build balls HTML, checking each shot to see if it was a free ball or multiple reds
     const ballsHtml = breakData.shots
       .filter(shot => shot.potted)
       .map(shot => {
         // If it was a free ball, display as 1 point regardless of actual ball color
-        const displayValue = shot.isFreeBall ? 1 : ballValues[shot.ball];
+        if (shot.isFreeBall) {
+          return `<span class="break-ball ball-${shot.ball}">1</span>`;
+        }
+        // If multiple reds were potted, show the count
+        if (shot.multipleReds && shot.multipleReds > 1) {
+          return `<span class="break-ball ball-${shot.ball}">${shot.multipleReds}R</span>`;
+        }
+        // Normal ball display
+        const displayValue = ballValues[shot.ball];
         return `<span class="break-ball ball-${shot.ball}">${displayValue}</span>`;
       })
       .join('');
@@ -1012,12 +1036,20 @@ class UIManager {
     return `
       <div class="breaks-list">
         ${filteredBreaks.slice(0, 20).map(b => {
-          // Use shots data to check for free balls
+          // Use shots data to check for free balls and multiple reds
           const ballsHtml = b.shots
             .filter(shot => shot.potted)
             .map(shot => {
               // If it was a free ball, display as 1 point regardless of actual ball color
-              const displayValue = shot.isFreeBall ? 1 : ballValues[shot.ball];
+              if (shot.isFreeBall) {
+                return `<span class="break-ball ball-${shot.ball}" style="display: inline-block; margin: 0 2px;">1</span>`;
+              }
+              // If multiple reds were potted, show the count
+              if (shot.multipleReds && shot.multipleReds > 1) {
+                return `<span class="break-ball ball-${shot.ball}" style="display: inline-block; margin: 0 2px;">${shot.multipleReds}R</span>`;
+              }
+              // Normal ball display
+              const displayValue = ballValues[shot.ball];
               return `<span class="break-ball ball-${shot.ball}" style="display: inline-block; margin: 0 2px;">${displayValue}</span>`;
             })
             .join('');

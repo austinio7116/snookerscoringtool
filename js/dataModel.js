@@ -71,7 +71,8 @@ class DataModel {
       isFoul: attributes.isFoul || false,
       foulPoints: attributes.foulPoints || 0,
       duration: attributes.duration || 0,
-      isFreeBall: attributes.isFreeBall || false
+      isFreeBall: attributes.isFreeBall || false,
+      multipleReds: attributes.multipleReds || undefined
     };
   }
 

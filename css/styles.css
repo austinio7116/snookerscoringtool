@@ -524,6 +524,13 @@ body {
 .ball-btn:hover { border-color: rgba(255,255,255,0.6); transform: translateY(-2px); }
 .ball-btn.selected { border-color: var(--primary-gold); box-shadow: 0 0 15px var(--primary-gold); }
 
+/* Multi-red buttons styling */
+.ball-btn.multi-red {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
 /* Apply Colors to Balls */
 .ball-btn[data-color="red"], .ball-red { background-color: var(--ball-red); }
 .ball-btn[data-color="yellow"], .ball-yellow { background-color: var(--ball-yellow); }

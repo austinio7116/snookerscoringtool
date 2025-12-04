@@ -7,6 +7,7 @@ class SnookerApp {
     this.timer = new TimerManager();
     this.ui = new UIManager();
     this.selectedBall = null;
+    this.selectedBallCount = 1;
     this.shotStartTime = null;
     this.shotAction = 'pot'; // Default action: pot, miss, safety, foul
     this.shotHistory = []; // Track shots for undo functionality
@@ -254,6 +255,7 @@ class SnookerApp {
   handleFoul(foulPoints) {
     const playAgain = document.getElementById('foul-play-again').checked;
     const freeBall = document.getElementById('foul-free-ball').checked;
+    const redsPotted = parseInt(document.getElementById('foul-reds-potted').value) || 0;
     this.hideFoulDialog();
 
     if (!this.selectedBall) {
@@ -264,27 +266,29 @@ class SnookerApp {
       isSafety: false,
       isFoul: true,
       foulPoints: foulPoints,
-      duration: this.timer.endShot()
+      duration: this.timer.endShot(),
+      redsPottedDuringFoul: redsPotted
     };
 
     const shot = DataModel.createShot(this.selectedBall, false, attributes);
     
     // Process shot but handle player switching based on "play again" option
-    // Pass the foul points to be awarded in processFoulShot
-    this.processFoulShot(shot, playAgain, true, foulPoints);
+    // Pass the foul points and reds potted to be handled in processFoulShot
+    this.processFoulShot(shot, playAgain, true, foulPoints, redsPotted);
     
     // Set free ball state if checkbox was checked
     this.freeBallActive = freeBall;
     
-    // Reset the checkboxes for next time
+    // Reset the checkboxes and input for next time
     document.getElementById('foul-play-again').checked = false;
     document.getElementById('foul-free-ball').checked = false;
+    document.getElementById('foul-reds-potted').value = '0';
     
     // Update display to show free ball options if active
     this.updateDisplay();
   }
 
-  processFoulShot(shot, playAgain, saveState = true, foulPoints = 0) {
+  processFoulShot(shot, playAgain, saveState = true, foulPoints = 0, redsPotted = 0) {
     // Save state for undo BEFORE awarding foul points
     if (saveState) {
       this.saveStateForUndo();
@@ -303,8 +307,10 @@ class SnookerApp {
 
     this.currentFrame.currentBreak.shots.push(shot);
 
-    // Update table state (fouls don't pot balls)
-    DataModel.updateTableState(this.currentFrame, this.selectedBall, false);
+    // Update table state - remove reds if any were potted during foul
+    if (redsPotted > 0) {
+      this.currentFrame.redsRemaining = Math.max(0, this.currentFrame.redsRemaining - redsPotted);
+    }
 
     // Handle player switching
     if (playAgain) {
@@ -732,46 +738,107 @@ class SnookerApp {
     } else {
       availableBalls = DataModel.getNextBall(this.currentFrame);
     }
-    this.ui.renderBallSelector(availableBalls, (ball) => this.selectBall(ball));
+    this.ui.renderBallSelector(availableBalls, (ball, count) => this.selectBall(ball, count), this.currentFrame.redsRemaining);
   }
 
-  selectBall(ball) {
+  selectBall(ball, count = 1) {
     // Don't allow ball selection if play hasn't started or timer is paused
     if (!this.playStarted || this.timer.isPaused) {
       return;
     }
 
     this.selectedBall = ball;
+    this.selectedBallCount = count;
     
     // Highlight selected ball
     document.querySelectorAll('.ball-btn').forEach(btn => {
       btn.classList.remove('selected');
     });
     
-    const selectedBtn = document.querySelector(`[data-ball="${ball}"]`);
+    const selectedBtn = document.querySelector(`[data-ball="${ball}"]${count > 1 ? `[data-count="${count}"]` : ':not([data-count])'}`);
     if (selectedBtn) {
       selectedBtn.classList.add('selected');
     }
     
-    // Auto-pot the ball after selection (one-click mode)
+    // Auto-pot the ball(s) after selection (one-click mode)
     setTimeout(() => {
-      if (this.selectedBall === ball) {
-        const attributes = {
-          isSafety: false,
-          isFoul: false,
-          foulPoints: 0,
-          duration: this.timer.endShot(),
-          isFreeBall: this.freeBallActive
-        };
-        
-        const shot = DataModel.createShot(ball, true, attributes);
-        this.processShot(shot, true);
+      if (this.selectedBall === ball && this.selectedBallCount === count) {
+        // Handle multiple reds
+        if (ball === 'red' && count > 1) {
+          this.potMultipleReds(count);
+        } else {
+          const attributes = {
+            isSafety: false,
+            isFoul: false,
+            foulPoints: 0,
+            duration: this.timer.endShot(),
+            isFreeBall: this.freeBallActive
+          };
+          
+          const shot = DataModel.createShot(ball, true, attributes);
+          this.processShot(shot, true);
+        }
       }
     }, 300); // Short delay to allow UI update
   }
 
+  potMultipleReds(count) {
+    // Save state for undo
+    this.saveStateForUndo();
+    
+    // Calculate points (count reds)
+    const points = count * 1;
+    
+    // Add shot to current break
+    if (!this.currentFrame.currentBreak) {
+      this.startNewBreak();
+    }
+
+    const duration = this.timer.endShot();
+
+    // Create a single shot with multipleReds attribute
+    const attributes = {
+      isSafety: false,
+      isFoul: false,
+      foulPoints: 0,
+      duration: duration,
+      isFreeBall: false,
+      multipleReds: count
+    };
+
+    const shot = DataModel.createShot('red', true, attributes);
+    shot.points = points; // Override points for multiple reds
+    
+    this.currentFrame.currentBreak.shots.push(shot);
+    this.currentFrame.currentBreak.points += points;
+
+    // Add a single entry to balls array with the count
+    // This will be displayed as "2R", "3R", etc. in the UI
+    this.currentFrame.currentBreak.balls.push('red');
+
+    // Update frame score
+    this.currentFrame.scores[this.currentFrame.activePlayer] += points;
+
+    // Update table state - remove multiple reds
+    this.currentFrame.redsRemaining = Math.max(0, this.currentFrame.redsRemaining - count);
+
+    // Continue break, start new shot timer
+    this.timer.startShot();
+
+    // Reset shot input
+    this.resetShotInput();
+    this.updateDisplay();
+    this.saveMatch();
+
+    // Check if frame is complete
+    if (DataModel.isFrameComplete(this.currentFrame)) {
+      this.completeFrame();
+    }
+  }
+
   resetShotInput() {
     this.selectedBall = null;
+    this.selectedBallCount = 1;
 
     // Clear ball selection
     document.querySelectorAll('.ball-btn').forEach(btn => {

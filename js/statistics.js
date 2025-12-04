@@ -122,8 +122,8 @@ class StatisticsEngine {
 
     // Calculate safety success dynamically by analyzing break sequences
     const safetyResults = this.calculateSafetySuccess(frame);
-    stats.player1.safeties.successful = safetyResults.player1.successful;
-    stats.player2.safeties.successful = safetyResults.player2.successful;
+    stats.player1.safeties.successful += safetyResults.player1.successful;
+    stats.player2.safeties.successful += safetyResults.player2.successful;
   }
 
   static processShotStatistics(shot, playerStats) {
@@ -209,8 +209,10 @@ class StatisticsEngine {
   }
 
   static calculateAverageShotTime(stats) {
-    if (stats.shots.total === 0) return 0;
-    return (stats.totalShotTime / stats.shots.total / 1000).toFixed(1); // Convert to seconds
+    // Include all shots: pot attempts + safeties
+    const totalShots = stats.shots.total + stats.safeties.attempted;
+    if (totalShots === 0) return 0;
+    return (stats.totalShotTime / totalShots / 1000).toFixed(1); // Convert to seconds
   }
 
   static calculatePointsPerVisit(stats) {
