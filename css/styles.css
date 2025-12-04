@@ -1451,7 +1451,7 @@ body {
 }
 
 .progression-frame-title {
-  font-size: 1rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--primary-gold);
   text-transform: uppercase;
@@ -1462,7 +1462,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 1.1rem;
+  font-size: 0.7rem;
   font-weight: 700;
   font-family: var(--font-mono);
 }
