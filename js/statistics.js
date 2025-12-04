@@ -299,6 +299,90 @@ class StatisticsEngine {
     return breaks.length > 0 ? breaks[0] : null;
   }
 
+  static getFrameProgression(frame) {
+    // Calculate score progression throughout a frame using timestamps
+    const progression = {
+      timestamps: [new Date(frame.startTime).getTime()],
+      player1: [0],
+      player2: [0],
+      labels: ['Start'],
+      events: []
+    };
+
+    let currentScores = [0, 0];
+    const frameStartTime = new Date(frame.startTime).getTime();
+
+    // Collect all shots with their timestamps across all breaks
+    const allShots = [];
+    frame.breaks.forEach(breakData => {
+      breakData.shots.forEach(shot => {
+        allShots.push({
+          ...shot,
+          player: breakData.player,
+          timestamp: new Date(shot.timestamp).getTime()
+        });
+      });
+    });
+
+    // Sort shots by timestamp to ensure chronological order
+    allShots.sort((a, b) => a.timestamp - b.timestamp);
+
+    // Process shots in chronological order
+    allShots.forEach(shot => {
+      // Update scores based on shot
+      if (shot.potted && !shot.isFoul) {
+        currentScores[shot.player] += shot.points;
+      }
+      
+      // Handle foul points (awarded to opponent)
+      if (shot.isFoul && shot.foulPoints > 0) {
+        const opponentIndex = shot.player === 0 ? 1 : 0;
+        currentScores[opponentIndex] += shot.foulPoints;
+      }
+
+      // Add data point after each significant shot
+      if (shot.potted || shot.isFoul) {
+        progression.timestamps.push(shot.timestamp);
+        progression.player1.push(currentScores[0]);
+        progression.player2.push(currentScores[1]);
+        
+        // Create label for this point
+        let label = '';
+        if (shot.isFoul) {
+          label = `Foul (${shot.foulPoints})`;
+        } else if (shot.potted) {
+          label = shot.ball.charAt(0).toUpperCase();
+        }
+        progression.labels.push(label);
+        
+        // Store event info for tooltips/debugging
+        progression.events.push({
+          player: shot.player,
+          ball: shot.ball,
+          potted: shot.potted,
+          isFoul: shot.isFoul,
+          foulPoints: shot.foulPoints,
+          score1: currentScores[0],
+          score2: currentScores[1]
+        });
+      }
+    });
+
+    // Ensure we have the final scores
+    if (progression.player1[progression.player1.length - 1] !== frame.scores[0] ||
+        progression.player2[progression.player2.length - 1] !== frame.scores[1]) {
+      const lastTimestamp = allShots.length > 0
+        ? allShots[allShots.length - 1].timestamp
+        : frameStartTime;
+      progression.timestamps.push(lastTimestamp + 1000); // Add 1 second for visual clarity
+      progression.player1.push(frame.scores[0]);
+      progression.player2.push(frame.scores[1]);
+      progression.labels.push('End');
+    }
+
+    return progression;
+  }
+
   static getFrameSummary(frame) {
     return {
       number: frame.number,

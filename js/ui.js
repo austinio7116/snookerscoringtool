@@ -106,6 +106,10 @@ class UIManager {
       if (e.target.classList.contains('analysis-tab')) {
         this.handleChartTabSwitch(e.target);
       }
+      // Frame selector for progression chart
+      if (e.target.classList.contains('frame-selector-btn')) {
+        this.handleFrameSelection(e.target);
+      }
     });
   }
 
@@ -141,6 +145,11 @@ class UIManager {
         break;
       case 'diff':
         chartCanvas.innerHTML = this.renderDiffChart(completedFrames, players, bestOf);
+        break;
+      case 'frame-progression':
+        // Default to first frame
+        const selectedFrame = completedFrames[0];
+        chartCanvas.innerHTML = this.renderFrameProgressionChart(selectedFrame, players, completedFrames);
         break;
     }
   }
@@ -932,6 +941,7 @@ class UIManager {
         '<button class="analysis-tab" data-chart="scores">Scores</button>' +
         '<button class="analysis-tab" data-chart="breaks">Breaks</button>' +
         '<button class="analysis-tab" data-chart="total-points">Total Points</button>' +
+        '<button class="analysis-tab" data-chart="frame-progression">Frame Progress</button>' +
       '</div>' +
       '<div class="chart-container">' +
         '<div class="chart-canvas" id="analysis-chart">' +
@@ -1012,6 +1022,144 @@ class UIManager {
       ${circles2}
       ${xLabels}
     </svg>`;
+  }
+
+  handleFrameSelection(button) {
+    const frameNumber = parseInt(button.dataset.frame);
+    const chartCanvas = document.getElementById('analysis-chart');
+    if (!chartCanvas || !window.currentMatchData) return;
+
+    const { frames, players } = window.currentMatchData;
+    const completedFrames = frames.filter(f => f.winner !== null);
+    const selectedFrame = completedFrames.find(f => f.number === frameNumber);
+    
+    if (!selectedFrame) return;
+
+    // Update active button
+    document.querySelectorAll('.frame-selector-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    button.classList.add('active');
+
+    // Re-render chart with selected frame
+    chartCanvas.innerHTML = this.renderFrameProgressionChart(selectedFrame, players, completedFrames);
+  }
+
+  renderFrameProgressionChart(frame, players, allFrames) {
+    // Get progression data for the frame
+    const progression = StatisticsEngine.getFrameProgression(frame);
+    
+    if (!progression || progression.player1.length === 0) {
+      return '<div class="frame-history-empty"><p>No progression data available for this frame.</p></div>';
+    }
+
+    const maxScore = Math.max(...progression.player1, ...progression.player2, 1);
+    const chartHeight = 240;
+    const chartWidth = 500;
+    const padding = 40;
+    
+    // Use timestamps for x-axis positioning
+    const minTime = Math.min(...progression.timestamps);
+    const maxTime = Math.max(...progression.timestamps);
+    const timeRange = maxTime - minTime || 1; // Avoid division by zero
+
+    // Calculate frame duration in minutes for display
+    const frameDurationMs = maxTime - minTime;
+    const frameDurationMin = Math.floor(frameDurationMs / 60000);
+    const frameDurationSec = Math.floor((frameDurationMs % 60000) / 1000);
+
+    // Create points for both players using timestamps
+    const points1 = progression.player1.map((val, i) => ({
+      x: 50 + ((progression.timestamps[i] - minTime) / timeRange) * chartWidth,
+      y: chartHeight - ((val / maxScore) * (chartHeight - padding)),
+      score: val,
+      time: progression.timestamps[i]
+    }));
+    
+    const points2 = progression.player2.map((val, i) => ({
+      x: 50 + ((progression.timestamps[i] - minTime) / timeRange) * chartWidth,
+      y: chartHeight - ((val / maxScore) * (chartHeight - padding)),
+      score: val,
+      time: progression.timestamps[i]
+    }));
+
+    const createPath = (points) => {
+      return points.map((p, i) => {
+        const command = i === 0 ? 'M' : 'L';
+        return `${command} ${p.x} ${p.y}`;
+      }).join(' ');
+    };
+
+    const path1 = createPath(points1);
+    const path2 = createPath(points2);
+
+    // Grid lines
+    const gridLines = [0, 25, 50, 75, 100].map(y =>
+      `<line x1="50" y1="${y * 2.4}" x2="${50 + chartWidth}" y2="${y * 2.4}" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" vector-effect="non-scaling-stroke"/>`
+    ).join('');
+    
+    // Y-axis labels (scores)
+    const yLabels = [0, 25, 50, 75, 100].map((val, i) =>
+      `<text x="45" y="${240 - (i * 60) + 4}" fill="#666" font-size="10" text-anchor="end">${Math.round((val / 100) * maxScore)}</text>`
+    ).join('');
+    
+    // Data point circles with player-specific colors
+    const circles1 = points1.map((p, i) =>
+      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#d32f2f" stroke="#121212" stroke-width="1">
+        <title>${players[0]}: ${p.score}</title>
+      </circle>`
+    ).join('');
+    
+    const circles2 = points2.map((p, i) =>
+      `<circle cx="${p.x}" cy="${p.y}" r="2" fill="#fbc02d" stroke="#121212" stroke-width="1">
+        <title>${players[1]}: ${p.score}</title>
+      </circle>`
+    ).join('');
+
+    // X-axis time labels (show time intervals)
+    const timeLabels = [0, 25, 50, 75, 100].map(percent => {
+      const timeMs = minTime + (timeRange * percent / 100);
+      const elapsedMs = timeMs - minTime;
+      const minutes = Math.floor(elapsedMs / 60000);
+      const seconds = Math.floor((elapsedMs % 60000) / 1000);
+      const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      const x = 50 + (percent / 100) * chartWidth;
+      return `<text x="${x}" y="260" fill="#666" font-size="10" text-anchor="middle">${timeStr}</text>`;
+    }).join('');
+
+    // Frame selector buttons
+    const frameSelector = allFrames.map(f => {
+      const isActive = f.number === frame.number ? 'active' : '';
+      return `<button class="frame-selector-btn ${isActive}" data-frame="${f.number}">Frame ${f.number}</button>`;
+    }).join('');
+
+    return `
+      <div class="frame-selector-container">
+        <div class="frame-selector-buttons">
+          ${frameSelector}
+        </div>
+      </div>
+      <div class="frame-progression-info">
+        <div class="progression-frame-title">Frame ${frame.number} (Duration: ${frameDurationMin}:${frameDurationSec.toString().padStart(2, '0')})</div>
+        <div class="progression-final-score">
+          <span class="player1-color">${players[0]}: ${frame.scores[0]}</span>
+          <span class="score-divider">-</span>
+          <span class="player2-color">${players[1]}: ${frame.scores[1]}</span>
+        </div>
+      </div>
+      <div style="margin-top: 15px;">
+        <svg viewBox="0 -10 600 280" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 280px; overflow: visible;">
+          ${gridLines}
+          ${yLabels}
+          <path d="${path2}" fill="none" stroke="#fbc02d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+          <path d="${path1}" fill="none" stroke="#d32f2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+          ${circles1}
+          ${circles2}
+          ${timeLabels}
+          <text x="300" y="270" fill="#666" font-size="10" text-anchor="middle">Time (mm:ss)</text>
+        </svg>
+      </div>
+    `;
   }
 
 
