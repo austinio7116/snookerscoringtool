@@ -30,7 +30,7 @@ A comprehensive static HTML/JavaScript application for tracking snooker matches 
 - **Ball Sequences**: Complete record of every ball in each break
 - **Current Break Display**: Real-time display of points and balls in current break
 - **High Breaks**: Identify highest breaks per frame and match
-- **Break Distribution**: Count breaks of 10+, 20+, 30+, 40+, 50+, 60+, 70+, 80+, 90+, 100+, and centuries
+- **Break Distribution**: Count breaks of 10+, 20+, 30+, 40+, 50+, and centuries
 
 ### Timing
 - **Frame Timer**: Track duration of each frame with pause/resume functionality
@@ -51,14 +51,11 @@ A comprehensive static HTML/JavaScript application for tracking snooker matches 
 
 #### Per Player:
 - **Pot Percentage**: Overall and per ball color
-- **Long Pot Success Rate**: Percentage of successful long pots
-- **Rest Pot Success Rate**: Success rate when using the rest
 - **Safety Success Rate**: Effectiveness of safety play
-- **Escape Success Rate**: Success rate of escape attempts
 - **Average Shot Time**: Mean time per shot in seconds
 - **Points Per Visit**: Scoring efficiency (total points / visits)
 - **Fouls**: Total foul count
-- **Break Building**: Count of breaks in various ranges (10+, 20+, 30+, 40+, 50+, 60+, 70+, 80+, 90+, 100+, centuries)
+- **Break Building**: Count of breaks in various ranges (10+, 20+, 30+, 40+, 50+, centuries)
 
 #### Match Statistics:
 - Frame-by-frame breakdown
@@ -190,7 +187,7 @@ Comprehensive side-by-side comparison with:
   - Pot Success %
   - Average Shot Time
   - Points per Visit
-  - Break counts (10+, 20+, 30+, 40+, 50+, centuries)
+  - Break counts (10+, 20+, 30+, 40+, 50+, Century Breaks)
   - Safety Success Rate
   - Fouls committed
 
