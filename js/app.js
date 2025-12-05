@@ -669,6 +669,11 @@ class SnookerApp {
   loadMatch(match) {
     this.match = match;
     
+    // If importing a completed match, save it to history immediately
+    if (match.status === 'completed') {
+      StorageManager.saveToHistory(match);
+    }
+    
     // Load current frame
     if (this.match.currentFrame < this.match.frames.length) {
       this.currentFrame = this.match.frames[this.match.currentFrame];
