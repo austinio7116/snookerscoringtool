@@ -509,7 +509,7 @@ body {
 .table-points {
   color: var(--primary-gold);
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 1rem;
   letter-spacing: 0.5px;
 }
 
@@ -1871,7 +1871,7 @@ body {
   }
   
   .break-header {
-    font-size: 0.65rem;
+    font-size: 1rem;
     margin-bottom: 4px;
   }
   
