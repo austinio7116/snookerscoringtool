@@ -552,17 +552,57 @@ class SnookerApp {
     // Get the last state from history
     const lastState = this.shotHistory.pop();
     
-    // Remove the shot from current break and get its details
+    // Check if player switched (shot ended the break)
+    const playerSwitched = lastState.activePlayer !== this.currentFrame.activePlayer;
+    
     let removedShot = null;
-    if (this.currentFrame.currentBreak && this.currentFrame.currentBreak.shots.length > 0) {
-      removedShot = this.currentFrame.currentBreak.shots.pop();
+    
+    if (playerSwitched) {
+      // Player switched - the shot is in the previous break, not current
+      // Remove the current (new) break first
+      if (this.currentFrame.breaks.length > 0) {
+        this.currentFrame.breaks.pop();
+      }
       
-      // Subtract points from break
-      this.currentFrame.currentBreak.points -= removedShot.points;
+      // Now get the previous break which contains the shot to undo
+      if (this.currentFrame.breaks.length > 0) {
+        this.currentFrame.currentBreak = this.currentFrame.breaks[this.currentFrame.breaks.length - 1];
+        
+        if (this.currentFrame.currentBreak.shots.length > 0) {
+          removedShot = this.currentFrame.currentBreak.shots.pop();
+          
+          // Only subtract points if not a foul (foul points went to opponent)
+          if (!removedShot.isFoul) {
+            this.currentFrame.currentBreak.points -= removedShot.points;
+          }
+          
+          // Remove ball from break if it was potted
+          if (removedShot.potted && this.currentFrame.currentBreak.balls.length > 0) {
+            this.currentFrame.currentBreak.balls.pop();
+          }
+        }
+      } else {
+        this.currentFrame.currentBreak = null;
+      }
+    } else {
+      // No player switch - shot is in current break
+      if (this.currentFrame.currentBreak && this.currentFrame.currentBreak.shots.length > 0) {
+        removedShot = this.currentFrame.currentBreak.shots.pop();
+        
+        // Subtract points from break
+        this.currentFrame.currentBreak.points -= removedShot.points;
+        
+        // Remove ball from break if it was potted
+        if (removedShot.potted && this.currentFrame.currentBreak.balls.length > 0) {
+          this.currentFrame.currentBreak.balls.pop();
+        }
+      }
       
-      // Remove ball from break if it was potted
-      if (removedShot.potted && this.currentFrame.currentBreak.balls.length > 0) {
-        this.currentFrame.currentBreak.balls.pop();
+      // If current break is now empty, remove it
+      if (this.currentFrame.currentBreak && this.currentFrame.currentBreak.shots.length === 0) {
+        this.currentFrame.breaks.pop();
+        this.currentFrame.currentBreak = lastState.currentBreak ?
+          this.currentFrame.breaks[this.currentFrame.breaks.length - 1] : null;
       }
     }
     
@@ -576,13 +616,6 @@ class SnookerApp {
     if (this.currentFrame.currentBreak && lastState.currentBreak) {
       this.currentFrame.currentBreak.points = lastState.currentBreak.points;
       this.currentFrame.currentBreak.balls = [...lastState.currentBreak.balls];
-    }
-    
-    // If current break is empty, remove it and restore previous break
-    if (this.currentFrame.currentBreak && this.currentFrame.currentBreak.shots.length === 0) {
-      this.currentFrame.breaks.pop();
-      this.currentFrame.currentBreak = lastState.currentBreak ?
-        this.currentFrame.breaks[this.currentFrame.breaks.length - 1] : null;
     }
     
     // Don't recalculate match statistics - this would reset totalPoints for completed frames
