@@ -301,17 +301,8 @@ class StatisticsEngine {
 
   static getFrameProgression(frame) {
     // Calculate score progression throughout a frame using timestamps
-    const progression = {
-      timestamps: [new Date(frame.startTime).getTime()],
-      player1: [0],
-      player2: [0],
-      labels: ['Start'],
-      events: []
-    };
-
-    let currentScores = [0, 0];
     const frameStartTime = new Date(frame.startTime).getTime();
-
+    
     // Collect all shots with their timestamps across all breaks
     const allShots = [];
     frame.breaks.forEach(breakData => {
@@ -327,8 +318,21 @@ class StatisticsEngine {
     // Sort shots by timestamp to ensure chronological order
     allShots.sort((a, b) => a.timestamp - b.timestamp);
 
+    // Find the first actual shot timestamp to handle long delays before play starts
+    const firstShotTime = allShots.length > 0 ? allShots[0].timestamp : frameStartTime;
+    
+    const progression = {
+      timestamps: [firstShotTime],
+      player1: [0],
+      player2: [0],
+      labels: ['Start'],
+      events: []
+    };
+
+    let currentScores = [0, 0];
+
     // Process shots in chronological order
-    allShots.forEach(shot => {
+    allShots.forEach((shot, index) => {
       // Update scores based on shot
       if (shot.potted && !shot.isFoul) {
         currentScores[shot.player] += shot.points;
@@ -340,7 +344,7 @@ class StatisticsEngine {
         currentScores[opponentIndex] += shot.foulPoints;
       }
 
-      // Add data point after each significant shot
+      // Add data point after each significant shot (potted ball or foul)
       if (shot.potted || shot.isFoul) {
         progression.timestamps.push(shot.timestamp);
         progression.player1.push(currentScores[0]);
@@ -367,18 +371,6 @@ class StatisticsEngine {
         });
       }
     });
-
-    // Ensure we have the final scores
-    if (progression.player1[progression.player1.length - 1] !== frame.scores[0] ||
-        progression.player2[progression.player2.length - 1] !== frame.scores[1]) {
-      const lastTimestamp = allShots.length > 0
-        ? allShots[allShots.length - 1].timestamp
-        : frameStartTime;
-      progression.timestamps.push(lastTimestamp + 1000); // Add 1 second for visual clarity
-      progression.player1.push(frame.scores[0]);
-      progression.player2.push(frame.scores[1]);
-      progression.labels.push('End');
-    }
 
     return progression;
   }

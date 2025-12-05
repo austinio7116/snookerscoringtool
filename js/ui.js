@@ -1093,15 +1093,18 @@ class UIManager {
     const path1 = createPath(points1);
     const path2 = createPath(points2);
 
-    // Grid lines
-    const gridLines = [0, 25, 50, 75, 100].map(y =>
-      `<line x1="50" y1="${y * 2.4}" x2="${50 + chartWidth}" y2="${y * 2.4}" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" vector-effect="non-scaling-stroke"/>`
-    ).join('');
+    // Grid lines - use proper calculation based on chartHeight and padding
+    const gridLines = [0, 25, 50, 75, 100].map(percent => {
+      const y = chartHeight - ((percent / 100) * (chartHeight - padding));
+      return `<line x1="50" y1="${y}" x2="${50 + chartWidth}" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" vector-effect="non-scaling-stroke"/>`;
+    }).join('');
     
-    // Y-axis labels (scores)
-    const yLabels = [0, 25, 50, 75, 100].map((val, i) =>
-      `<text x="45" y="${240 - (i * 60) + 4}" fill="#666" font-size="10" text-anchor="end">${Math.round((val / 100) * maxScore)}</text>`
-    ).join('');
+    // Y-axis labels (scores) - match the grid line positions
+    const yLabels = [0, 25, 50, 75, 100].map(percent => {
+      const scoreValue = Math.round((percent / 100) * maxScore);
+      const y = chartHeight - ((percent / 100) * (chartHeight - padding));
+      return `<text x="45" y="${y + 4}" fill="#666" font-size="10" text-anchor="end">${scoreValue}</text>`;
+    }).join('');
     
     // Data point circles with player-specific colors
     const circles1 = points1.map((p, i) =>
