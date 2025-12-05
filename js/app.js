@@ -640,6 +640,13 @@ class SnookerApp {
   handleResumeMatch(matchId) {
     const match = StorageManager.loadMatchById(matchId);
     if (match) {
+      // Auto-save current match to history before resuming another one
+      const existingMatch = StorageManager.loadCurrentMatch();
+      if (existingMatch && existingMatch.status !== 'completed' && existingMatch.id !== matchId) {
+        StorageManager.saveToHistory(existingMatch);
+        this.ui.showNotification('Previous match saved to history', 'info');
+      }
+      
       // Check if match is completed
       if (match.status === 'completed') {
         // Load in read-only mode for viewing stats
