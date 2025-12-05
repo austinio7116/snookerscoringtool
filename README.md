@@ -314,23 +314,9 @@ Matches are exported as JSON with this structure:
 ## Limitations
 
 - No shot position tracking (heatmap) - would require more complex input
-- Safety success is simplified (marked successful if shot is missed)
 - Maximum 50 matches in history (older matches automatically removed)
 - Browser localStorage limit (~5-10MB depending on browser)
 - Undo only supports one level (last shot only)
-
-## Future Enhancements
-
-Possible additions for future versions:
-- Keyboard shortcuts for faster input
-- Shot position tracking with visual table
-- Advanced safety success calculation
-- Match comparison tools
-- Statistical charts and graphs
-- PDF report generation
-- Multi-device sync
-- Multi-level undo/redo
-- Shot notes and annotations
 
 ## License
 
@@ -341,5 +327,3 @@ This is a free, open-source application. Use and modify as needed.
 For issues or questions, please refer to the code comments or create an issue in the repository.
 
 ---
-
-**Enjoy tracking your snooker matches! 🎱**
