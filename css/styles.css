@@ -107,8 +107,8 @@ body {
 
 .view-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 15px;
   margin-bottom: 25px;
   padding-bottom: 15px;
   border-bottom: 1px solid var(--border-color);
@@ -118,14 +118,46 @@ body {
   font-size: 1.8rem;
   text-transform: uppercase;
   letter-spacing: 1px;
+  text-align: center;
 }
 
 .header-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-wrap: nowrap;
+  justify-content: center;
+}
+
+.header-actions .btn {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 8px;
+  font-size: 0.65rem;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .view-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .view-header h2 {
+    text-align: left;
+  }
+  
+  .header-actions {
+    justify-content: flex-end;
+  }
+  
+  .header-actions .btn {
+    flex: 0 0 auto;
+    padding: 12px 24px;
+    font-size: 0.9rem;
+  }
 }
 
 /* --- Buttons --- */
@@ -236,15 +268,13 @@ body {
 /* --- Match View: Scoreboard --- */
 .match-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 10px;
   background-color: var(--bg-card);
   padding: 15px 25px;
   border-radius: var(--radius-md);
   margin-bottom: 20px;
   border-left: 4px solid var(--primary-red);
-  gap: 15px;
-  flex-wrap: wrap;
 }
 
 .frame-info {
@@ -252,12 +282,22 @@ body {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
+  text-align: center;
+}
+
+.match-header-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
 }
 
 .timer-display {
   font-family: var(--font-mono);
   font-size: 1.4rem;
   color: var(--primary-gold);
+  flex: 1;
+  text-align: center;
 }
 
 /* Players */
@@ -1762,7 +1802,6 @@ body {
   .header-actions .btn {
     padding: 10px 16px;
     font-size: 0.8rem;
-    white-space: nowrap;
   }
   
   /* Compact Match Header */
