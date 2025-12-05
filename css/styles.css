@@ -243,6 +243,8 @@ body {
   border-radius: var(--radius-md);
   margin-bottom: 20px;
   border-left: 4px solid var(--primary-red);
+  gap: 15px;
+  flex-wrap: wrap;
 }
 
 .frame-info {

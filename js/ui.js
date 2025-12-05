@@ -96,6 +96,17 @@ class UIManager {
       this.elements.backToMatchBtn.addEventListener('click', () => this.showView('match'));
     }
 
+    // Back to home buttons from match and stats views
+    const backToHomeFromMatchBtn = document.getElementById('back-to-home-from-match-btn');
+    if (backToHomeFromMatchBtn) {
+      backToHomeFromMatchBtn.addEventListener('click', () => this.showView('home'));
+    }
+    
+    const backToHomeFromStatsBtn = document.getElementById('back-to-home-from-stats-btn');
+    if (backToHomeFromStatsBtn) {
+      backToHomeFromStatsBtn.addEventListener('click', () => this.showView('home'));
+    }
+
     // History screen
     if (this.elements.backToHomeBtn) {
       this.elements.backToHomeBtn.addEventListener('click', () => this.showView('home'));
