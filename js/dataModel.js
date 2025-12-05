@@ -28,7 +28,7 @@ class DataModel {
     };
   }
 
-  static createFrame(frameNumber) {
+  static createFrame(frameNumber, redsRemaining = 15) {
     return {
       number: frameNumber,
       startTime: new Date().toISOString(),
@@ -37,7 +37,7 @@ class DataModel {
       scores: [0, 0],
       breaks: [],
       currentBreak: null,
-      redsRemaining: 15,
+      redsRemaining: redsRemaining,
       colorsRemaining: ['yellow', 'green', 'brown', 'blue', 'pink', 'black'],
       activePlayer: 0,
       duration: 0,

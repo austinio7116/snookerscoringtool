@@ -130,6 +130,7 @@ class SnookerApp {
     const player1 = document.getElementById('player1-name').value.trim();
     const player2 = document.getElementById('player2-name').value.trim();
     const bestOf = parseInt(document.getElementById('best-of').value);
+    const numberOfReds = parseInt(document.getElementById('number-of-reds').value);
 
     if (!player1 || !player2) {
       this.ui.showNotification('Please enter both player names', 'error');
@@ -144,6 +145,7 @@ class SnookerApp {
     }
 
     this.match = DataModel.createMatch(player1, player2, bestOf);
+    this.match.numberOfReds = numberOfReds;
     this.startNewFrame();
     this.ui.showView('match');
     this.saveMatch();
@@ -152,7 +154,8 @@ class SnookerApp {
 
   startNewFrame() {
     const frameNumber = this.match.frames.length + 1;
-    this.currentFrame = DataModel.createFrame(frameNumber);
+    const numberOfReds = this.match.numberOfReds || 15;
+    this.currentFrame = DataModel.createFrame(frameNumber, numberOfReds);
     this.match.frames.push(this.currentFrame);
     this.match.currentFrame = this.match.frames.length - 1;
 
