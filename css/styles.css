@@ -1499,6 +1499,214 @@ body {
   transform: translateX(2px);
 }
 
+/* Turn Log Styles */
+.turn-log-header {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+}
+
+.turn-log-header h4 {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+  color: var(--primary-gold);
+}
+
+.turn-log-final-score {
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.turn-log-container {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 15px;
+}
+
+.turn-log-header-row {
+  display: grid;
+  grid-template-columns: 50px 150px 1fr 100px 100px;
+  gap: 10px;
+  padding: 10px;
+  background-color: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.turn-log-entry {
+  display: grid;
+  grid-template-columns: 50px 150px 1fr 100px 100px;
+  gap: 10px;
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border-color);
+  align-items: center;
+  transition: var(--transition);
+}
+
+.turn-log-entry:hover {
+  background-color: var(--bg-hover);
+}
+
+.turn-log-entry.event-pot {
+  border-left: 3px solid var(--color-success);
+}
+
+.turn-log-entry.event-miss {
+  border-left: 3px solid var(--text-muted);
+}
+
+.turn-log-entry.event-foul {
+  border-left: 3px solid var(--color-danger);
+}
+
+.turn-log-entry.event-safety {
+  border-left: 3px solid var(--color-info);
+}
+
+.turn-number {
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.turn-player {
+  font-weight: 600;
+}
+
+.turn-player.player1 {
+  color: var(--ball-red);
+}
+
+.turn-player.player2 {
+  color: var(--ball-yellow);
+}
+
+.turn-event {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.turn-ball {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  border: 1px solid rgba(255,255,255,0.25);
+  box-shadow: inset -3px -3px 6px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.turn-ball.ball-yellow {
+  color: #111;
+  text-shadow: none;
+}
+
+.turn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  width: 28px;
+  height: 28px;
+}
+
+.turn-desc {
+  font-size: 0.9rem;
+}
+
+.turn-indicators {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.event-indicator {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  background-color: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  color: var(--primary-gold);
+}
+
+.turn-score {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.turn-time {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+/* Frame Filter Styles */
+.stats-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.stats-table-header h3 {
+  margin: 0;
+}
+
+.frame-filter-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.frame-filter-container label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.frame-filter-select {
+  padding: 8px 12px;
+  background-color: var(--bg-dark);
+  border: 1px solid var(--border-color);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+  min-width: 150px;
+}
+
+.frame-filter-select:hover {
+  border-color: var(--primary-gold);
+}
+
+.frame-filter-select:focus {
+  outline: none;
+  border-color: var(--primary-gold);
+  box-shadow: 0 0 0 2px rgba(255, 204, 0, 0.1);
+}
+
 .history-info h3 { margin-bottom: 5px; font-size: 1.2rem; }
 .history-date { font-size: 0.85rem; color: var(--text-muted); }
 
@@ -1846,6 +2054,71 @@ body {
   .analysis-tab {
     padding: 6px 10px;
     font-size: 0.75rem;
+  }
+
+  /* Turn Log Mobile */
+  .turn-log-header-row,
+  .turn-log-entry {
+    grid-template-columns: 30px 80px 1fr 70px;
+    gap: 5px;
+    padding: 8px 5px;
+    font-size: 0.75rem;
+  }
+
+  .turn-time {
+    display: none; /* Hide time column on mobile */
+  }
+
+  .turn-log-header-row .turn-time {
+    display: none;
+  }
+
+  .turn-ball {
+    width: 24px;
+    height: 24px;
+    font-size: 0.7rem;
+  }
+
+  .turn-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 1.2rem;
+  }
+
+  .turn-desc {
+    font-size: 0.8rem;
+  }
+
+  .event-indicator {
+    font-size: 0.65rem;
+    padding: 1px 4px;
+  }
+
+  .turn-log-container {
+    padding: 10px;
+  }
+
+  .turn-log-header h4 {
+    font-size: 1.1rem;
+  }
+
+  .turn-log-final-score {
+    font-size: 0.85rem;
+  }
+
+  /* Frame Filter Mobile */
+  .stats-table-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .frame-filter-container {
+    width: 100%;
+  }
+
+  .frame-filter-select {
+    flex: 1;
+    min-width: 0;
   }
   
   .chart-container {

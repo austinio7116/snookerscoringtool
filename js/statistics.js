@@ -375,6 +375,38 @@ class StatisticsEngine {
     return progression;
   }
 
+  static getFrameTurnLog(frame) {
+    // Generate a chronological log of all events in the frame
+    const turnLog = [];
+    
+    frame.breaks.forEach((breakData, breakIndex) => {
+      breakData.shots.forEach((shot, shotIndex) => {
+        const event = {
+          timestamp: new Date(shot.timestamp).getTime(),
+          player: breakData.player,
+          breakIndex: breakIndex,
+          shotIndex: shotIndex,
+          ball: shot.ball,
+          potted: shot.potted,
+          points: shot.points,
+          isSafety: shot.isSafety,
+          isFoul: shot.isFoul,
+          foulPoints: shot.foulPoints,
+          isFreeBall: shot.isFreeBall,
+          multipleReds: shot.multipleReds,
+          usedRest: shot.usedRest,
+          isEscape: shot.isEscape
+        };
+        turnLog.push(event);
+      });
+    });
+    
+    // Sort by timestamp to ensure chronological order
+    turnLog.sort((a, b) => a.timestamp - b.timestamp);
+    
+    return turnLog;
+  }
+
   static getFrameSummary(frame) {
     return {
       number: frame.number,

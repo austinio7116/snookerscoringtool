@@ -111,6 +111,13 @@ class UIManager {
         this.handleFrameSelection(e.target);
       }
     });
+
+    // Frame filter for statistics
+    document.addEventListener('change', (e) => {
+      if (e.target.id === 'frame-filter') {
+        this.handleFrameFilterChange(e.target);
+      }
+    });
   }
 
   handleChartTabSwitch(tab) {
@@ -150,6 +157,11 @@ class UIManager {
         // Default to first frame
         const selectedFrame = completedFrames[0];
         chartCanvas.innerHTML = this.renderFrameProgressionChart(selectedFrame, players, completedFrames);
+        break;
+      case 'turn-log':
+        // Default to first frame
+        const selectedFrameLog = completedFrames[0];
+        chartCanvas.innerHTML = this.renderTurnLog(selectedFrameLog, players, completedFrames);
         break;
     }
   }
@@ -547,7 +559,18 @@ class UIManager {
 
         <!-- Unified Statistics Table -->
         <div class="unified-stats-table">
-          <h3>Match Statistics Comparison</h3>
+          <div class="stats-table-header">
+            <h3>Match Statistics Comparison</h3>
+            <div class="frame-filter-container">
+              <label for="frame-filter">Filter by Frame:</label>
+              <select id="frame-filter" class="frame-filter-select">
+                <option value="all">Full Match</option>
+                ${match.frames.filter(f => f.winner !== null).map(f =>
+                  `<option value="${f.number}">Frame ${f.number}</option>`
+                ).join('')}
+              </select>
+            </div>
+          </div>
           <table class="stats-comparison-table">
             <thead>
               <tr>
@@ -942,6 +965,7 @@ class UIManager {
         '<button class="analysis-tab" data-chart="breaks">Breaks</button>' +
         '<button class="analysis-tab" data-chart="total-points">Total Points</button>' +
         '<button class="analysis-tab" data-chart="frame-progression">Frame Progress</button>' +
+        '<button class="analysis-tab" data-chart="turn-log">Turn Log</button>' +
       '</div>' +
       '<div class="chart-container">' +
         '<div class="chart-canvas" id="analysis-chart">' +
@@ -1041,8 +1065,15 @@ class UIManager {
     });
     button.classList.add('active');
 
-    // Re-render chart with selected frame
-    chartCanvas.innerHTML = this.renderFrameProgressionChart(selectedFrame, players, completedFrames);
+    // Determine which view to render based on active tab
+    const activeTab = document.querySelector('.analysis-tab.active');
+    const chartType = activeTab ? activeTab.dataset.chart : 'frame-progression';
+    
+    if (chartType === 'turn-log') {
+      chartCanvas.innerHTML = this.renderTurnLog(selectedFrame, players, completedFrames);
+    } else {
+      chartCanvas.innerHTML = this.renderFrameProgressionChart(selectedFrame, players, completedFrames);
+    }
   }
 
   renderFrameProgressionChart(frame, players, allFrames) {
@@ -1165,6 +1196,123 @@ class UIManager {
     `;
   }
 
+  renderTurnLog(frame, players, allFrames) {
+    // Get turn log data for the frame
+    const turnLog = StatisticsEngine.getFrameTurnLog(frame);
+    
+    if (!turnLog || turnLog.length === 0) {
+      return '<div class="frame-history-empty"><p>No turn data available for this frame.</p></div>';
+    }
+
+    const ballValues = {
+      red: 1,
+      yellow: 2,
+      green: 3,
+      brown: 4,
+      blue: 5,
+      pink: 6,
+      black: 7
+    };
+
+    // Frame selector buttons
+    const frameSelector = allFrames.map(f => {
+      const isActive = f.number === frame.number ? 'active' : '';
+      return `<button class="frame-selector-btn ${isActive}" data-frame="${f.number}">Frame ${f.number}</button>`;
+    }).join('');
+
+    // Build turn log entries
+    let currentScores = [0, 0];
+    const turnLogHtml = turnLog.map((event, index) => {
+      const playerName = players[event.player];
+      const playerClass = event.player === 0 ? 'player1' : 'player2';
+      
+      // Update scores
+      if (event.potted && !event.isFoul) {
+        currentScores[event.player] += event.points;
+      }
+      if (event.isFoul && event.foulPoints > 0) {
+        const opponentIndex = event.player === 0 ? 1 : 0;
+        currentScores[opponentIndex] += event.foulPoints;
+      }
+
+      // Determine event description
+      let eventDesc = '';
+      let eventClass = '';
+      let ballDisplay = '';
+
+      if (event.isFoul) {
+        eventDesc = `Foul (${event.foulPoints} points)`;
+        eventClass = 'event-foul';
+        ballDisplay = `<span class="turn-icon">⚠️</span>`;
+      } else if (event.isSafety) {
+        eventDesc = `Safety`;
+        eventClass = 'event-safety';
+        ballDisplay = `<span class="turn-icon">🛡️</span>`;
+      } else if (event.potted) {
+        if (event.isFreeBall) {
+          eventDesc = `Potted ${event.ball} (Free Ball)`;
+          ballDisplay = `<span class="turn-ball ball-${event.ball}">1</span>`;
+        } else if (event.multipleReds && event.multipleReds > 1) {
+          eventDesc = `Potted ${event.multipleReds} reds`;
+          ballDisplay = `<span class="turn-ball ball-red">${event.multipleReds}R</span>`;
+        } else {
+          eventDesc = `Potted ${event.ball}`;
+          ballDisplay = `<span class="turn-ball ball-${event.ball}">${ballValues[event.ball]}</span>`;
+        }
+        eventClass = 'event-pot';
+      } else {
+        eventDesc = `Miss`;
+        eventClass = 'event-miss';
+        ballDisplay = `<span class="turn-icon">❌</span>`;
+      }
+
+      // Add special indicators
+      const indicators = [];
+      if (event.usedRest) indicators.push('<span class="event-indicator">🎯 Rest</span>');
+      if (event.isEscape) indicators.push('<span class="event-indicator">🔓 Escape</span>');
+
+      const time = new Date(event.timestamp);
+      const timeStr = time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      return `
+        <div class="turn-log-entry ${eventClass}">
+          <div class="turn-number">${index + 1}</div>
+          <div class="turn-player ${playerClass}">${playerName}</div>
+          <div class="turn-event">
+            ${ballDisplay}
+            <span class="turn-desc">${eventDesc}</span>
+            ${indicators.length > 0 ? `<div class="turn-indicators">${indicators.join(' ')}</div>` : ''}
+          </div>
+          <div class="turn-score">${currentScores[0]} - ${currentScores[1]}</div>
+          <div class="turn-time">${timeStr}</div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="frame-selector-container">
+        <div class="frame-selector-buttons">
+          ${frameSelector}
+        </div>
+      </div>
+      <div class="turn-log-header">
+        <h4>Frame ${frame.number} - Turn by Turn Log</h4>
+        <div class="turn-log-final-score">
+          Final Score: <span class="player1-color">${players[0]} ${frame.scores[0]}</span> - <span class="player2-color">${players[1]} ${frame.scores[1]}</span>
+        </div>
+      </div>
+      <div class="turn-log-container">
+        <div class="turn-log-header-row">
+          <div class="turn-number">#</div>
+          <div class="turn-player">Player</div>
+          <div class="turn-event">Event</div>
+          <div class="turn-score">Score</div>
+          <div class="turn-time">Time</div>
+        </div>
+        ${turnLogHtml}
+      </div>
+    `;
+  }
 
   renderBreaksList(breaks, players) {
     // Filter to only show breaks of 10 or more
@@ -1370,6 +1518,129 @@ class UIManager {
         handleClose();
       }
     });
+  }
+
+  handleFrameFilterChange(select) {
+    const frameValue = select.value;
+    
+    if (!window.currentMatchData) return;
+    
+    const { frames, players } = window.currentMatchData;
+    
+    // Calculate statistics based on filter
+    let stats;
+    let isFrameFilter = false;
+    
+    if (frameValue === 'all') {
+      // Full match statistics
+      const match = {
+        frames: frames,
+        players: players
+      };
+      stats = StatisticsEngine.calculateMatchStatistics(match);
+    } else {
+      // Single frame statistics
+      isFrameFilter = true;
+      const frameNumber = parseInt(frameValue);
+      const selectedFrame = frames.find(f => f.number === frameNumber);
+      if (!selectedFrame) return;
+      
+      stats = {
+        player1: DataModel.createPlayerStatistics(),
+        player2: DataModel.createPlayerStatistics()
+      };
+      StatisticsEngine.processFrameStatistics(selectedFrame, stats);
+    }
+    
+    // Format the statistics
+    const player1Stats = StatisticsEngine.formatPlayerStatistics(stats.player1);
+    const player2Stats = StatisticsEngine.formatPlayerStatistics(stats.player2);
+    
+    // Update the statistics table
+    this.updateStatisticsTable(player1Stats, player2Stats, players, isFrameFilter);
+  }
+
+  updateStatisticsTable(player1Stats, player2Stats, players, isFrameFilter = false) {
+    const tableBody = document.querySelector('.stats-comparison-table tbody');
+    if (!tableBody) return;
+
+    // Only show "Frames Won" row when viewing full match stats
+    const framesWonRow = !isFrameFilter ? `
+      <tr>
+        <td class="stat-label">Frames Won</td>
+        <td class="stat-value ${player1Stats.framesWon > player2Stats.framesWon ? 'stat-leader' : ''}">${player1Stats.framesWon}</td>
+        <td class="stat-value ${player2Stats.framesWon > player1Stats.framesWon ? 'stat-leader' : ''}">${player2Stats.framesWon}</td>
+      </tr>
+    ` : '';
+
+    tableBody.innerHTML = `
+      ${framesWonRow}
+      <tr>
+        <td class="stat-label">Total Points</td>
+        <td class="stat-value ${player1Stats.totalPoints > player2Stats.totalPoints ? 'stat-leader' : ''}">${player1Stats.totalPoints}</td>
+        <td class="stat-value ${player2Stats.totalPoints > player1Stats.totalPoints ? 'stat-leader' : ''}">${player2Stats.totalPoints}</td>
+      </tr>
+      <tr>
+        <td class="stat-label">High Break</td>
+        <td class="stat-value ${player1Stats.highBreak > player2Stats.highBreak ? 'stat-leader' : ''}">${player1Stats.highBreak}</td>
+        <td class="stat-value ${player2Stats.highBreak > player1Stats.highBreak ? 'stat-leader' : ''}">${player2Stats.highBreak}</td>
+      </tr>
+      <tr>
+        <td class="stat-label">Pot Success</td>
+        <td class="stat-value ${parseFloat(player1Stats.potPercentage) > parseFloat(player2Stats.potPercentage) ? 'stat-leader' : ''}">${player1Stats.potPercentage}%</td>
+        <td class="stat-value ${parseFloat(player2Stats.potPercentage) > parseFloat(player1Stats.potPercentage) ? 'stat-leader' : ''}">${player2Stats.potPercentage}%</td>
+      </tr>
+      <tr>
+        <td class="stat-label">Average Shot Time</td>
+        <td class="stat-value ${parseFloat(player1Stats.averageShotTime) < parseFloat(player2Stats.averageShotTime) ? 'stat-leader' : ''}">${player1Stats.averageShotTime}s</td>
+        <td class="stat-value ${parseFloat(player2Stats.averageShotTime) < parseFloat(player1Stats.averageShotTime) ? 'stat-leader' : ''}">${player2Stats.averageShotTime}s</td>
+      </tr>
+      <tr>
+        <td class="stat-label">Points per Visit</td>
+        <td class="stat-value ${parseFloat(player1Stats.pointsPerVisit) > parseFloat(player2Stats.pointsPerVisit) ? 'stat-leader' : ''}">${player1Stats.pointsPerVisit}</td>
+        <td class="stat-value ${parseFloat(player2Stats.pointsPerVisit) > parseFloat(player1Stats.pointsPerVisit) ? 'stat-leader' : ''}">${player2Stats.pointsPerVisit}</td>
+      </tr>
+      <tr>
+        <td class="stat-label">Breaks 10+</td>
+        <td class="stat-value ${player1Stats.breaks.over10 > player2Stats.breaks.over10 ? 'stat-leader' : ''}">${player1Stats.breaks.over10}</td>
+        <td class="stat-value ${player2Stats.breaks.over10 > player1Stats.breaks.over10 ? 'stat-leader' : ''}">${player2Stats.breaks.over10}</td>
+      </tr>
+      <tr>
+        <td class="stat-label">Breaks 20+</td>
+        <td class="stat-value ${player1Stats.breaks.over20 > player2Stats.breaks.over20 ? 'stat-leader' : ''}">${player1Stats.breaks.over20}</td>
+        <td class="stat-value ${player2Stats.breaks.over20 > player1Stats.breaks.over20 ? 'stat-leader' : ''}">${player2Stats.breaks.over20}</td>
+      </tr>
+      <tr>
+        <td class="stat-label">Breaks 30+</td>
+        <td class="stat-value ${player1Stats.breaks.over30 > player2Stats.breaks.over30 ? 'stat-leader' : ''}">${player1Stats.breaks.over30}</td>
+        <td class="stat-value ${player2Stats.breaks.over30 > player1Stats.breaks.over30 ? 'stat-leader' : ''}">${player2Stats.breaks.over30}</td>
+      </tr>
+      <tr>
+        <td class="stat-label">Breaks 40+</td>
+        <td class="stat-value ${player1Stats.breaks.over40 > player2Stats.breaks.over40 ? 'stat-leader' : ''}">${player1Stats.breaks.over40}</td>
+        <td class="stat-value ${player2Stats.breaks.over40 > player1Stats.breaks.over40 ? 'stat-leader' : ''}">${player2Stats.breaks.over40}</td>
+      </tr>
+      <tr>
+        <td class="stat-label">Breaks 50+</td>
+        <td class="stat-value ${player1Stats.breaks.over50 > player2Stats.breaks.over50 ? 'stat-leader' : ''}">${player1Stats.breaks.over50}</td>
+        <td class="stat-value ${player2Stats.breaks.over50 > player1Stats.breaks.over50 ? 'stat-leader' : ''}">${player2Stats.breaks.over50}</td>
+      </tr>
+      <tr>
+        <td class="stat-label">Century Breaks</td>
+        <td class="stat-value ${player1Stats.breaks.century > player2Stats.breaks.century ? 'stat-leader' : ''}">${player1Stats.breaks.century}</td>
+        <td class="stat-value ${player2Stats.breaks.century > player1Stats.breaks.century ? 'stat-leader' : ''}">${player2Stats.breaks.century}</td>
+      </tr>
+      <tr>
+        <td class="stat-label">Safety Success</td>
+        <td class="stat-value ${parseFloat(player1Stats.safetySuccessRate) > parseFloat(player2Stats.safetySuccessRate) ? 'stat-leader' : ''}">${player1Stats.safetySuccessRate}%</td>
+        <td class="stat-value ${parseFloat(player2Stats.safetySuccessRate) > parseFloat(player1Stats.safetySuccessRate) ? 'stat-leader' : ''}">${player2Stats.safetySuccessRate}%</td>
+      </tr>
+      <tr>
+        <td class="stat-label">Fouls</td>
+        <td class="stat-value ${player1Stats.fouls < player2Stats.fouls ? 'stat-leader' : ''}">${player1Stats.fouls}</td>
+        <td class="stat-value ${player2Stats.fouls < player1Stats.fouls ? 'stat-leader' : ''}">${player2Stats.fouls}</td>
+      </tr>
+    `;
   }
 }
 
