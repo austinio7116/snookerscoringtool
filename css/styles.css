@@ -2046,14 +2046,21 @@ body {
   }
   
   .analysis-tabs {
-    gap: 6px;
+    gap: 4px;
     margin-bottom: 12px;
     padding-bottom: 8px;
+    flex-wrap: nowrap;
   }
   
   .analysis-tab {
-    padding: 6px 10px;
-    font-size: 0.75rem;
+    padding: 6px 4px;
+    font-size: 0.6rem;
+    white-space: normal;
+    letter-spacing: 0.2px;
+    flex: 1 1 0;
+    min-width: 0;
+    line-height: 1.2;
+    text-align: center;
   }
 
   /* Turn Log Mobile */
