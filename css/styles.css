@@ -1765,11 +1765,68 @@ body {
 .history-status.in-progress { background-color: var(--primary-blue); color: white; }
 .history-status.completed { background-color: var(--color-success); color: black; }
 
+.history-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .btn-resume {
-  background-color: var(--color-success);
+  background-color: var(--primary-red);
   color: white;
-  padding: 8px 20px;
+  padding: 12px 24px;
+  border: none;
   border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 0.9rem;
+}
+
+.btn-resume:hover {
+  background-color: #c40027;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.btn-resume:active {
+  transform: translateY(0);
+}
+
+.btn-resume.btn-view-stats {
+  background-color: var(--color-info);
+}
+
+.btn-resume.btn-view-stats:hover {
+  background-color: #1565c0;
+}
+
+.btn-delete {
+  background-color: transparent;
+  border: 1px solid var(--text-muted);
+  color: var(--text-main);
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 0.9rem;
+}
+
+.btn-delete:hover {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  background-color: rgba(211, 47, 47, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.btn-delete:active {
+  transform: translateY(0);
 }
 
 /* --- Mobile --- */
@@ -1802,6 +1859,42 @@ body {
   .header-actions .btn {
     padding: 10px 16px;
     font-size: 0.8rem;
+  }
+  
+  /* History Item Mobile Layout */
+  .history-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+    padding: 15px;
+  }
+  
+  .history-info {
+    width: 100%;
+  }
+  
+  .history-info h3 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+  }
+  
+  .history-info p {
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+  }
+  
+  .history-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .btn-resume,
+  .btn-delete {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 0.85rem;
+    justify-content: center;
   }
   
   /* Compact Match Header */
