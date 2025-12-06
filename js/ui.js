@@ -149,6 +149,7 @@ class UIManager {
 
     const { frames, players, bestOf } = window.currentMatchData;
     const completedFrames = frames.filter(f => f.winner !== null);
+    const allFrames = frames; // Include all frames for frame-specific views
 
     // Render appropriate chart
     switch(chartType) {
@@ -165,14 +166,14 @@ class UIManager {
         chartCanvas.innerHTML = this.renderDiffChart(completedFrames, players, bestOf);
         break;
       case 'frame-progression':
-        // Default to first frame
-        const selectedFrame = completedFrames[0];
-        chartCanvas.innerHTML = this.renderFrameProgressionChart(selectedFrame, players, completedFrames);
+        // Default to first frame (include in-progress frames)
+        const selectedFrame = allFrames[0];
+        chartCanvas.innerHTML = this.renderFrameProgressionChart(selectedFrame, players, allFrames);
         break;
       case 'turn-log':
-        // Default to first frame
-        const selectedFrameLog = completedFrames[0];
-        chartCanvas.innerHTML = this.renderTurnLog(selectedFrameLog, players, completedFrames);
+        // Default to first frame (include in-progress frames)
+        const selectedFrameLog = allFrames[0];
+        chartCanvas.innerHTML = this.renderTurnLog(selectedFrameLog, players, allFrames);
         break;
     }
   }
@@ -576,8 +577,8 @@ class UIManager {
               <label for="frame-filter">Filter by Frame:</label>
               <select id="frame-filter" class="frame-filter-select">
                 <option value="all">Full Match</option>
-                ${match.frames.filter(f => f.winner !== null).map(f =>
-                  `<option value="${f.number}">Frame ${f.number}</option>`
+                ${match.frames.map(f =>
+                  `<option value="${f.number}">Frame ${f.number}${f.winner === null ? ' (In Progress)' : ''}</option>`
                 ).join('')}
               </select>
             </div>
@@ -958,12 +959,22 @@ class UIManager {
 
   renderMatchAnalysis(frames, players) {
     if (frames.length === 0) {
-      return '<div class="frame-history-empty"><p>No frames completed yet.</p></div>';
+      return '<div class="frame-history-empty"><p>No frames started yet.</p></div>';
     }
 
     const completedFrames = frames.filter(f => f.winner !== null);
-    if (completedFrames.length === 0) {
-      return '<div class="frame-history-empty"><p>No frames completed yet.</p></div>';
+    const hasCompletedFrames = completedFrames.length > 0;
+    
+    // Determine which tab should be active by default
+    const defaultTab = hasCompletedFrames ? 'diff' : 'frame-progression';
+    
+    // Determine initial chart content
+    let initialChart;
+    if (hasCompletedFrames) {
+      initialChart = this.renderDiffChart(completedFrames, players, frames.length > 0 ? window.currentMatchData.bestOf : 1);
+    } else {
+      // Show first frame's progression for in-progress frames
+      initialChart = this.renderFrameProgressionChart(frames[0], players, frames);
     }
 
     return '<div class="match-analysis-section">' +
@@ -971,16 +982,16 @@ class UIManager {
         '<div class="analysis-title">Match Analysis</div>' +
       '</div>' +
       '<div class="analysis-tabs">' +
-        '<button class="analysis-tab active" data-chart="diff">Diff</button>' +
-        '<button class="analysis-tab" data-chart="scores">Scores</button>' +
-        '<button class="analysis-tab" data-chart="breaks">Breaks</button>' +
-        '<button class="analysis-tab" data-chart="total-points">Total Points</button>' +
-        '<button class="analysis-tab" data-chart="frame-progression">Frame Progress</button>' +
+        (hasCompletedFrames ? `<button class="analysis-tab ${defaultTab === 'diff' ? 'active' : ''}" data-chart="diff">Diff</button>` : '') +
+        (hasCompletedFrames ? '<button class="analysis-tab" data-chart="scores">Scores</button>' : '') +
+        (hasCompletedFrames ? '<button class="analysis-tab" data-chart="breaks">Breaks</button>' : '') +
+        (hasCompletedFrames ? '<button class="analysis-tab" data-chart="total-points">Total Points</button>' : '') +
+        `<button class="analysis-tab ${defaultTab === 'frame-progression' ? 'active' : ''}" data-chart="frame-progression">Frame Progress</button>` +
         '<button class="analysis-tab" data-chart="turn-log">Turn Log</button>' +
       '</div>' +
       '<div class="chart-container">' +
         '<div class="chart-canvas" id="analysis-chart">' +
-          this.renderDiffChart(completedFrames, players, frames.length > 0 ? window.currentMatchData.bestOf : 1) +
+          initialChart +
         '</div>' +
         '<div class="chart-legend">' +
           '<div class="legend-item">' +
@@ -1065,8 +1076,8 @@ class UIManager {
     if (!chartCanvas || !window.currentMatchData) return;
 
     const { frames, players } = window.currentMatchData;
-    const completedFrames = frames.filter(f => f.winner !== null);
-    const selectedFrame = completedFrames.find(f => f.number === frameNumber);
+    const allFrames = frames; // Include all frames, not just completed ones
+    const selectedFrame = allFrames.find(f => f.number === frameNumber);
     
     if (!selectedFrame) return;
 
@@ -1081,9 +1092,9 @@ class UIManager {
     const chartType = activeTab ? activeTab.dataset.chart : 'frame-progression';
     
     if (chartType === 'turn-log') {
-      chartCanvas.innerHTML = this.renderTurnLog(selectedFrame, players, completedFrames);
+      chartCanvas.innerHTML = this.renderTurnLog(selectedFrame, players, allFrames);
     } else {
-      chartCanvas.innerHTML = this.renderFrameProgressionChart(selectedFrame, players, completedFrames);
+      chartCanvas.innerHTML = this.renderFrameProgressionChart(selectedFrame, players, allFrames);
     }
   }
 
@@ -1172,10 +1183,11 @@ class UIManager {
       return `<text x="${x}" y="260" fill="#666" font-size="10" text-anchor="middle">${timeStr}</text>`;
     }).join('');
 
-    // Frame selector buttons
+    // Frame selector buttons - include all frames (completed and in progress)
     const frameSelector = allFrames.map(f => {
       const isActive = f.number === frame.number ? 'active' : '';
-      return `<button class="frame-selector-btn ${isActive}" data-frame="${f.number}">Frame ${f.number}</button>`;
+      const inProgress = f.winner === null ? ' (In Progress)' : '';
+      return `<button class="frame-selector-btn ${isActive}" data-frame="${f.number}">Frame ${f.number}${inProgress}</button>`;
     }).join('');
 
     return `
@@ -1225,10 +1237,11 @@ class UIManager {
       black: 7
     };
 
-    // Frame selector buttons
+    // Frame selector buttons - include all frames (completed and in progress)
     const frameSelector = allFrames.map(f => {
       const isActive = f.number === frame.number ? 'active' : '';
-      return `<button class="frame-selector-btn ${isActive}" data-frame="${f.number}">Frame ${f.number}</button>`;
+      const inProgress = f.winner === null ? ' (In Progress)' : '';
+      return `<button class="frame-selector-btn ${isActive}" data-frame="${f.number}">Frame ${f.number}${inProgress}</button>`;
     }).join('');
 
     // Build turn log entries

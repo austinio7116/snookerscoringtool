@@ -305,6 +305,8 @@ class StatisticsEngine {
     
     // Collect all shots with their timestamps across all breaks
     const allShots = [];
+    
+    // Include all completed breaks
     frame.breaks.forEach(breakData => {
       breakData.shots.forEach(shot => {
         allShots.push({
@@ -314,6 +316,17 @@ class StatisticsEngine {
         });
       });
     });
+    
+    // Include current break if it exists and has shots (for in-progress frames)
+    if (frame.currentBreak && frame.currentBreak.shots && frame.currentBreak.shots.length > 0) {
+      frame.currentBreak.shots.forEach(shot => {
+        allShots.push({
+          ...shot,
+          player: frame.currentBreak.player,
+          timestamp: new Date(shot.timestamp).getTime()
+        });
+      });
+    }
 
     // Sort shots by timestamp to ensure chronological order
     allShots.sort((a, b) => a.timestamp - b.timestamp);
@@ -379,6 +392,7 @@ class StatisticsEngine {
     // Generate a chronological log of all events in the frame
     const turnLog = [];
     
+    // Include all completed breaks
     frame.breaks.forEach((breakData, breakIndex) => {
       breakData.shots.forEach((shot, shotIndex) => {
         const event = {
@@ -400,6 +414,29 @@ class StatisticsEngine {
         turnLog.push(event);
       });
     });
+    
+    // Include current break if it exists and has shots (for in-progress frames)
+    if (frame.currentBreak && frame.currentBreak.shots && frame.currentBreak.shots.length > 0) {
+      frame.currentBreak.shots.forEach((shot, shotIndex) => {
+        const event = {
+          timestamp: new Date(shot.timestamp).getTime(),
+          player: frame.currentBreak.player,
+          breakIndex: frame.breaks.length, // Current break index
+          shotIndex: shotIndex,
+          ball: shot.ball,
+          potted: shot.potted,
+          points: shot.points,
+          isSafety: shot.isSafety,
+          isFoul: shot.isFoul,
+          foulPoints: shot.foulPoints,
+          isFreeBall: shot.isFreeBall,
+          multipleReds: shot.multipleReds,
+          usedRest: shot.usedRest,
+          isEscape: shot.isEscape
+        };
+        turnLog.push(event);
+      });
+    }
     
     // Sort by timestamp to ensure chronological order
     turnLog.sort((a, b) => a.timestamp - b.timestamp);
